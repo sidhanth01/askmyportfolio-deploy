@@ -1,3 +1,14 @@
-altair
-pandas
-streamlit
+langchain
+langchain-community
+langchain-chroma
+chromadb
+pypdf
+markdown-it-py
+python-dotenv
+streamlit>=1.31.0
+sentence-transformers
+#ollama #required to run locally
+fpdf
+unstructured
+langchain-huggingface
+markdown
