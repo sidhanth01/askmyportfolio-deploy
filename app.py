@@ -597,19 +597,19 @@ st.markdown(
 )
 
 
-    # Footer section with structured markdown
-    st.markdown("""
-    <div style="margin-top:45px; color:#8998a7; font-size:0.9em; text-align:center;">
-        <p style="margin-bottom: 5px;">© 2025 <b>Sidhanth L</b></p>
-        <p style="margin-bottom: 5px;">Built with 
-            <span style='color:#68d6e3;'>LangChain</span>,
-            <span style='color:#3cbfbe;'>ChromaDB</span>, 
-            <span style='color:#c5ba6a;'>Streamlit</span>,
-            <span style='color:#b836bf;'>Mistral 7B LLM</span>
-        </p>
-        <p style="margin-bottom: 5px;">Powered by RAG · Deployed on Hugging Face Spaces</p>
-        <p>
-            <a href="https://github.com/sidhanth01" style="color:#8baaff;text-decoration:none;">GitHub</a>
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+# Footer section with structured markdown
+st.markdown("""
+ <div style="margin-top:45px; color:#8998a7; font-size:0.9em; text-align:center;">
+    <p style="margin-bottom: 5px;">© 2025 <b>Sidhanth L</b></p>
+    <p style="margin-bottom: 5px;">Built with 
+        <span style='color:#68d6e3;'>LangChain</span>,
+        <span style='color:#3cbfbe;'>ChromaDB</span>, 
+        <span style='color:#c5ba6a;'>Streamlit</span>,
+        <span style='color:#b836bf;'>Mistral 7B LLM</span>
+    </p>
+    <p style="margin-bottom: 5px;">Powered by RAG · Deployed on Hugging Face Spaces</p>
+    <p>
+        <a href="https://github.com/sidhanth01" style="color:#8baaff;text-decoration:none;">GitHub</a>
+    </p>
+</div>
+""", unsafe_allow_html=True)
