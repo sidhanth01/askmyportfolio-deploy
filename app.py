@@ -386,6 +386,7 @@ def get_llm():
         st.stop() # Stop if no LLM can be initialized
     return HuggingFaceHub(
         repo_id="google/flan-t5-base", # Consider a more capable model if needed
+        task="text2text-generation",
         model_kwargs={"temperature": 0.0, "max_length": 256},
         huggingfacehub_api_token=hf_token
     )
