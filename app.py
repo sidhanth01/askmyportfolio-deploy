@@ -13,7 +13,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_community.llms import Ollama
-from langchain_huggingface import HuggingFaceInferenceAPI
+from langchain_huggingface.llms import HuggingFaceInferenceAPI
 
 
 
