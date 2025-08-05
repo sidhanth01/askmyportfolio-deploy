@@ -597,16 +597,6 @@ st.markdown(
 )
 
 
-    else:
-        uploaded_pdf = st.file_uploader("Upload resume (PDF)", type=["pdf"], key="sidebar_resume_uploader")
-        if uploaded_pdf:
-            # Save uploaded PDF to data directory
-            with open(os.path.join(DATA_PATH, uploaded_pdf.name), "wb") as out:
-                out.write(uploaded_pdf.read())
-            st.success("Resume uploaded. Please refresh the page to apply changes and access it.")
-            st.info("The application will restart shortly to process the new document.")
-            st.stop() # Stop execution to trigger rerun and re-ingestion
-
     # Footer section with structured markdown
     st.markdown("""
     <div style="margin-top:45px; color:#8998a7; font-size:0.9em; text-align:center;">
