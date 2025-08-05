@@ -1,8 +1,8 @@
 ---
 title: Ask-My-Portfolio
 emoji: 💬
-colorFrom: '#62edc9'
-colorTo: '#90a0e6'
+colorFrom: 'blue'
+colorTo: 'indigo'
 sdk: streamlit
 app_file: app.py
 pinned: false
