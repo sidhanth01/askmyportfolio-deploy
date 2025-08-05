@@ -13,7 +13,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_community.llms import Ollama
-from langchain_huggingface.llms import HuggingFaceInferenceAPI
+from langchain_community.llms import HuggingFaceHub
 
 
 
@@ -384,8 +384,9 @@ def get_llm():
         st.error("HuggingFace API Token (HF_TOKEN) not found in your .env file. "
                  "Please set it up for cloud LLM fallback, or ensure Ollama is configured.")
         st.stop() # Stop if no LLM can be initialized
-    return HuggingFaceInferenceAPI(
+    return HuggingFaceHub(
         repo_id="google/flan-t5-base", # Consider a more capable model if needed
+         task="text2text-generation",
         model_kwargs={"temperature": 0.0, "max_length": 256},
         huggingfacehub_api_token=hf_token
     )
