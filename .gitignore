@@ -1,0 +1,15 @@
+# Python virtual environments
+venv/
+env/
+ragchatbot/
+.pyenv/
+
+# Python-specific files
+__pycache__/
+*.pyc
+
+# Operating system files
+.DS_Store
+.vscode/
+
+# Ignore a large file but push it with LFS
