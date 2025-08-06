@@ -9,7 +9,6 @@ from langchain_chroma import Chroma
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
-# from langchain_community.llms import Ollama # REMOVED: Ollama is for local use
 from langchain_community.llms import HuggingFaceHub
 
 # --- Streamlit Page Configuration ---
@@ -26,192 +25,190 @@ st.markdown("""
 
 /* Overall App Background and Text */
 .stApp {
-    background-color: #121212 !important; /* Deeper black/dark grey */
-    color: #e0e0e0 !important; /* Light grey for general text */
-    font-family: 'Inter', sans-serif; /* Modern, clean font */
+    background-color: #121212 !important;
+    color: #e0e0e0 !important;
+    font-family: 'Inter', sans-serif;
 }
 
 /* Sidebar Styling */
 section[data-testid="stSidebar"] {
-    background-color: #1c1c1c !important; /* Slightly lighter dark grey for sidebar */
+    background-color: #1c1c1c !important;
     color: #e0e0e0 !important;
     min-width: 330px;
-    border-right: 1px solid #333333; /* Darker border for separation */
-    box-shadow: 4px 0px 24px rgba(0, 0, 0, 0.2); /* More pronounced shadow */
-    transition: margin-left 0.3s ease-in-out; /* Smooth transition for expand/collapse */
+    border-right: 1px solid #333333;
+    box-shadow: 4px 0px 24px rgba(0, 0, 0, 0.2);
+    transition: margin-left 0.3s ease-in-out;
 }
 
 /* Sidebar expand/collapse button (hamburger menu) */
 button[data-testid="stSidebarNav"] {
-    display: none !important; /* Add this line to hide the button */
+    display: none !important;
 }
 
 /* Sidebar Buttons */
 .sidebar-items .stButton>button {
     border-radius: 9px;
     margin-bottom: 8px;
-    padding: 0.5em 1em; /* Increased padding */
+    padding: 0.5em 1em;
     color: #e3eded;
-    background: #2a2a2a; /* Darker background for buttons */
+    background: #2a2a2a;
     border: none;
-    font-size: 1.05em; /* Slightly larger font */
-    width: 100%; /* Make sidebar buttons full width */
+    font-size: 1.05em;
+    width: 100%;
     text-align: left;
-    transition: background 0.2s, color 0.2s, transform 0.1s; /* Smooth transitions */
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Subtle button shadow */
+    transition: background 0.2s, color 0.2s, transform 0.1s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 .stButton>button:hover {
-    background: #3a3a3a !important; /* Lighter on hover */
-    color: #62edc9 !important; /* Accent color on hover */
-    transform: translateY(-1px); /* Slight lift effect */
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2); /* More pronounced shadow on hover */
+    background: #3a3a3a !important;
+    color: #62edc9 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
 /* Adjust top padding for main content area */
-.st-emotion-cache-18ni7ap { /* This class targets the main content block */
+.st-emotion-cache-18ni7ap {
     padding-top: 0.1rem;
 }
-.st-emotion-cache-6qob1r { /* This class targets the sidebar content wrapper */
+.st-emotion-cache-6qob1r {
     min-width: 330px;
 }
 
 /* Main Heading and Tagline */
 .center-title {
     text-align: center;
-    font-family: 'Montserrat', sans-serif; /* Distinct font for heading */
-    font-size: 3.2em; /* Larger heading */
+    font-family: 'Montserrat', sans-serif;
+    font-size: 3.2em;
     font-weight: 700;
-    letter-spacing: 3px; /* More spacing */
-    color: #62edc9; /* Accent color for main title */
-    text-shadow: 0 0 10px rgba(98, 237, 201, 0.3); /* Subtle glow */
+    letter-spacing: 3px;
+    color: #62edc9;
+    text-shadow: 0 0 10px rgba(98, 237, 201, 0.3);
     margin: 0.7em 0 0.1em 0;
 }
 .tagline {
     text-align: center;
-    color: #b0b0b0; /* Softer grey for tagline */
-    font-size: 1.1em; /* Slightly larger tagline */
-    margin-bottom: 2.5em; /* More space below tagline */
+    color: #b0b0b0;
+    font-size: 1.1em;
+    margin-bottom: 2.5em;
 }
 
 /* Chat Message Containers (st.chat_message) */
 [data-testid="stChatMessage"] {
-    padding: 15px 20px; /* More padding */
-    margin-bottom: 12px; /* More space between messages */
-    border-radius: 22px; /* More rounded corners */
+    padding: 15px 20px;
+    margin-bottom: 12px;
+    border-radius: 22px;
     font-size: 1.05em;
     line-height: 1.6;
-    max-width: 770px; /* Limit width of chat bubbles */
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* Subtle shadow for bubbles */
-    display: flex; /* Enable flexbox for internal alignment (avatar/content) */
-    align-items: flex-start; /* Align items to the top (for avatars) */
+    max-width: 770px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: flex-start;
 }
 
 /* User Message Bubble (Left aligned) */
 [data-testid="stChatMessage"][data-st-chat-message-type="user"] {
-    background: #2a2a2a; /* Darker grey for user, consistent with AI's previous background */
-    color: #f8f9ff; /* Very light text */
-    margin-left: 15px; /* Spacing from left edge */
-    margin-right: auto; /* Align user messages to the left */
-    text-align: left; /* Keep text left-aligned within the bubble */
+    background: #2a2a2a;
+    color: #f8f9ff;
+    margin-left: 15px;
+    margin-right: auto;
+    text-align: left;
 }
 
 /* Assistant Message Bubble (Right aligned) */
 [data-testid="stChatMessage"][data-st-chat-message-type="assistant"] {
-    background: #33334d; /* Dark blue-purple for AI, consistent with user's previous background */
-    color: #e8ecff; /* Light text */
-    margin-right: 15px; /* Spacing from right edge */
-    margin-left: auto; /* Align assistant messages to the right */
-    text-align: left; /* Keep text left-aligned within the bubble */
+    background: #33334d;
+    color: #e8ecff;
+    margin-right: 15px;
+    margin-left: auto;
+    text-align: left;
 }
 
 /* Avatar Styling within chat messages */
-/* Adjust avatar position for user messages to be on the left */
-[data-testid="stChatMessage"][data-st-chat-message-type="user"] .st-emotion-cache-1c7gnj6 { /* User avatar container */
-    order: 0; /* Keep avatar on the left */
-    margin-right: 12px; /* Space after avatar */
+[data-testid="stChatMessage"][data-st-chat-message-type="user"] .st-emotion-cache-1c7gnj6 {
+    order: 0;
+    margin-right: 12px;
     margin-left: 0;
-    align-self: flex-start; /* Align avatar to top of message */
+    align-self: flex-start;
 }
-/* Adjust avatar position for assistant messages to be on the right */
-[data-testid="stChatMessage"][data-st-chat-message-type="assistant"] .st-emotion-cache-1c7gnj6 { /* Assistant avatar container */
-    order: 1; /* Move avatar to the right */
-    margin-left: 12px; /* Space after avatar */
+[data-testid="stChatMessage"][data-st-chat-message-type="assistant"] .st-emotion-cache-1c7gnj6 {
+    order: 1;
+    margin-left: 12px;
     margin-right: 0;
-    align-self: flex-start; /* Align avatar to top of message */
+    align-self: flex-start;
 }
 
 /* Ensure message content takes full width within its bubble */
-[data-testid="stChatMessage"] .st-emotion-cache-1ae02w6 { /* Message content wrapper */
+[data-testid="stChatMessage"] .st-emotion-cache-1ae02w6 {
     flex-grow: 1;
 }
 
 /* Streamlit chat_input (Gemini-like) */
 [data-testid="stChatInput"] {
-    background: #121212; /* Match app background */
-    padding: 15px 0; /* More padding around the input */
-    position: fixed; /* Keep input at the bottom */
+    background: #121212;
+    padding: 15px 0;
+    position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 1000; /* Ensure it stays on top */
-    border-top: 1px solid #333333; /* Darker separator line */
-    box-shadow: 0 -5px 15px rgba(0,0,0,0.3); /* Shadow to lift it from content */
+    z-index: 1000;
+    border-top: 1px solid #333333;
+    box-shadow: 0 -5px 15px rgba(0,0,0,0.3);
 }
 
 /* This targets the actual input box within st.chat_input */
 [data-testid="stChatInput"] > div > div {
-    background: #2a2a2a !important; /* Input box background */
-    border-radius: 30px !important; /* Even more rounded */
-    border: 1px solid #444444 !important; /* Darker, subtle border */
+    background: #2a2a2a !important;
+    border-radius: 30px !important;
+    border: 1px solid #444444 !important;
     color: #e0e0e0 !important;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25); /* More pronounced shadow */
-    min-height: 60px; /* Taller input box */
-    padding: 15px 25px; /* More padding inside the input */
-    margin: 0 auto; /* Center the input box */
-    max-width: 800px; /* Slightly wider input box */
-    width: calc(100% - 40px); /* Adjust width considering margins */
-    display: flex; /* Use flexbox for internal alignment */
-    align-items: center; /* Vertically align content */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    min-height: 60px;
+    padding: 15px 25px;
+    margin: 0 auto;
+    max-width: 800px;
+    width: calc(100% - 40px);
+    display: flex;
+    align-items: center;
 }
 [data-testid="stChatInput"] textarea {
-    color: #e0e0e0 !important; /* Text color inside input */
-    background: transparent !important; /* Ensure transparent background for text area */
-    resize: none !important; /* Disable manual resize */
-    padding: 0; /* Remove default textarea padding */
-    flex-grow: 1; /* Allow textarea to take available space */
-    height: auto !important; /* Allow height to adjust to content */
-    min-height: 24px; /* Minimum height for one line */
-    line-height: 1.5; /* Consistent line height */
+    color: #e0e0e0 !important;
+    background: transparent !important;
+    resize: none !important;
+    padding: 0;
+    flex-grow: 1;
+    height: auto !important;
+    min-height: 24px;
+    line-height: 1.5;
 }
-[data-testid="stChatInput"] ::placeholder { /* Placeholder text color */
+[data-testid="stChatInput"] ::placeholder {
     color: #888888 !important;
     opacity: 1;
 }
 
 /* Specific styling for the submit button inside chat_input */
 [data-testid="stChatInput"] button {
-    background-color: #4CAF50 !important; /* Green send button */
+    background-color: #4CAF50 !important;
     color: white !important;
-    border-radius: 50% !important; /* Circular button */
-    width: 48px !important; /* Larger button */
-    height: 48px !important; /* Larger button */
+    border-radius: 50% !important;
+    width: 48px !important;
+    height: 48px !important;
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative; /* Position relative to the flex container */
-    flex-shrink: 0; /* Prevent shrinking */
-    margin-left: 15px; /* Space from text area */
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3); /* Button shadow */
+    position: relative;
+    flex-shrink: 0;
+    margin-left: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
 }
 [data-testid="stChatInput"] button:hover {
-    background-color: #66BB6A !important; /* Lighter green on hover */
-    transform: translateY(-1px); /* Slight lift effect */
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4); /* More pronounced shadow on hover */
+    background-color: #66BB6A !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
 /* Ensure the send icon is visible and centered */
 [data-testid="stChatInput"] button svg {
-    font-size: 1.2em; /* Adjust icon size */
+    font-size: 1.2em;
 }
 
 /* File uploader */
@@ -224,8 +221,8 @@ button[data-testid="stSidebarNav"] {
     color: #e7faef;
     padding: 0.32em 0.82em;
     font-size: 1em;
-    text-decoration: none; /* Remove underline */
-    display: inline-block; /* Allow padding */
+    text-decoration: none;
+    display: inline-block;
     margin-top: 10px;
     transition: background 0.2s, color 0.2s;
 }
@@ -236,17 +233,17 @@ button[data-testid="stSidebarNav"] {
 
 /* Scrollbar styling */
 ::-webkit-scrollbar-thumb {
-    background: #444444 !important; /* Darker thumb */
+    background: #444444 !important;
     border-radius: 14px;
 }
 ::-webkit-scrollbar {
-    background: #222222 !important; /* Darker track */
+    background: #222222 !important;
     width: 9px;
 }
 
 /* Adjust Streamlit's default margins for main content to make space for fixed input */
-.st-emotion-cache-1ghvgyx { /* Main content block padding */
-    padding-bottom: 100px; /* Add space at the bottom for the fixed input */
+.st-emotion-cache-1ghvgyx {
+    padding-bottom: 100px;
 }
 
 /* Hide the default microphone input if using custom button */
@@ -262,17 +259,17 @@ button[data-testid="stSidebarNav"] {
 
 /* Download buttons at the bottom of the chat */
 .stDownloadButton>button {
-    background-color: #3a3a3a !important; /* Darker grey, consistent with sidebar buttons */
-    color: #62edc9 !important; /* Accent color */
+    background-color: #3a3a3a !important;
+    color: #62edc9 !important;
     border: 1px solid #555555 !important;
     border-radius: 8px !important;
-    padding: 0.4em 0.8em !important; /* Minimized padding */
-    font-size: 0.9em !important; /* Smaller font size */
+    padding: 0.4em 0.8em !important;
+    font-size: 0.9em !important;
     transition: background-color 0.2s, color 0.2s, border-color 0.2s;
-    display: inline-flex; /* Allows icon and text to align */
+    display: inline-flex;
     align-items: center;
-    gap: 5px; /* Space between icon and text */
-    margin-right: 10px; /* Space between buttons */
+    gap: 5px;
+    margin-right: 10px;
 }
 .stDownloadButton>button:hover {
     background-color: #4a4a4a !important;
@@ -319,15 +316,14 @@ def get_vector_store():
 
 @st.cache_resource
 def get_llm():
-    """Caches and returns the Language Model (Ollama or HuggingFaceHub fallback)."""
+    """Caches and returns the Language Model."""
     st.info("Using cloud-based LLM (HuggingFaceHub). Performance may vary.")
     hf_token = os.getenv("HF_TOKEN")
     if not hf_token:
-        st.error("HuggingFace API Token (HF_TOKEN) not found in your .env file. "
-                 "Please set it up for cloud LLM fallback, or ensure Ollama is configured.")
-        st.stop() # Stop if no LLM can be initialized
+        st.error("HuggingFace API Token (HF_TOKEN) not found. Please set it in your Hugging Face Space secrets.")
+        st.stop()
     return HuggingFaceHub(
-        repo_id="google/flan-t5-base", # Consider a more capable model if needed
+        repo_id="google/flan-t5-base",
         task="text2text-generation",
         model_kwargs={"temperature": 0.0, "max_length": 256},
         huggingfacehub_api_token=hf_token
@@ -335,7 +331,7 @@ def get_llm():
 
 # Initialize vector store and LLM
 vectorstore = get_vector_store()
-retriever = vectorstore.as_retriever(search_kwargs={"k": 3}) # Retrieve top 3 relevant documents
+retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 llm = get_llm()
 
 
@@ -367,52 +363,41 @@ rag_chain = (
 # Initialize chat messages and voice query in session state
 if "messages" not in st.session_state:
     st.session_state.messages = []
-if "voice_query" not in st.session_state: # Kept voice_query for potential future use, but not actively used for pre-fill
+if "voice_query" not in st.session_state:
     st.session_state.voice_query = ""
 
 # --- CHAT BUBBLES DISPLAY ---
-# Use a container to hold chat messages, allowing it to scroll independently
 chat_display_area = st.container()
 
 with chat_display_area:
     for idx, msg in enumerate(st.session_state.messages):
-        # User messages on the left, AI on the right
         if msg["role"] == "user":
-            with st.chat_message("user", avatar="🧑‍💼"): # User avatar
+            with st.chat_message("user", avatar="🧑‍💼"):
                 st.write(msg["content"])
-        else: # role is "assistant"
-            with st.chat_message("assistant", avatar="🤖"): # AI avatar
+        else:
+            with st.chat_message("assistant", avatar="🤖"):
                 st.write(msg["content"])
-                # Removed individual download/copy buttons as requested
 
 # --- MAIN CHAT INPUT ---
-# The main chat input box, fixed at the bottom
-# Removed 'value' parameter to avoid TypeError
 user_question = st.chat_input(
     "Ask me about my projects, skills, or career journey...",
-    key="chat_input_main_box", # Unique key for the chat input widget
+    key="chat_input_main_box",
 )
 
-# Process user question when submitted
 if user_question and user_question.strip() != "":
-    # Prevent duplicate messages if user hits enter multiple times or reruns
     if not st.session_state.messages or user_question.strip() != st.session_state.messages[-1]["content"]:
-        # Add user message to chat history
         st.session_state.messages.append({"role": "user", "content": user_question.strip()})
-        st.session_state.voice_query = "" # Clear voice query after it's been used
+        st.session_state.voice_query = ""
 
-        # Get AI response
         with st.spinner("Thinking..."):
             try:
                 response = rag_chain.invoke(user_question.strip())
             except Exception as e:
                 response = f"Sorry, there was an error processing your request: {e}. Please try again."
-            # Add AI response to chat history
             st.session_state.messages.append({"role": "assistant", "content": response})
-        st.rerun() # Rerun to display new messages and clear the input box
+        st.rerun()
 
 # --- DOWNLOAD FULL CHAT BUTTONS ---
-# Only show download options if there are messages in the chat
 if st.session_state.messages:
     def transcript_content():
         """Generates a plain text transcript of the chat."""
@@ -434,41 +419,38 @@ if st.session_state.messages:
         
         for msg in st.session_state.messages:
             role_label = "USER:" if msg["role"] == "user" else "AI:"
-            pdf.set_font("Arial", 'B', 11) # Bold for role
+            pdf.set_font("Arial", 'B', 11)
             pdf.cell(0, 8, safe_text(role_label), ln=1)
-            pdf.set_font("Arial", '', 11) # Regular for content
-            # Ensure multi_cell handles line breaks and special characters
+            pdf.set_font("Arial", '', 11)
             pdf.multi_cell(0, 8, safe_text(msg["content"]))
-            pdf.ln(2) # Small line break between messages
+            pdf.ln(2)
         
-        # Output PDF to BytesIO buffer
         pdf_output = io.BytesIO()
         pdf_bytes = pdf.output(dest='S')
         pdf_output.write(pdf_bytes)
-        pdf_output.seek(0) # Rewind to the beginning
+        pdf_output.seek(0)
         return pdf_output
 
-    st.markdown("---") # Separator before download buttons
-    # Use columns to place buttons next to each other
-    download_cols = st.columns([0.4, 0.1, 0.1, 0.4]) # Adjusted column ratios for centering
-    with download_cols[1]: # Place TXT button in the second column
+    st.markdown("---")
+    download_cols = st.columns([0.4, 0.1, 0.1, 0.4])
+    with download_cols[1]:
         st.download_button(
-            "⭳ Text", # Shorter label
+            "⭳ Text",
             data=transcript_content(),
             file_name="chat_transcript.txt",
             mime="text/plain",
             key="download_txt_chat",
-            use_container_width=True # Make button full width of its column
+            use_container_width=True
         )
-    with download_cols[2]: # Place PDF button in the third column
-        pdf_file_buffer = transcript_to_pdf() # Get the BytesIO object
+    with download_cols[2]:
+        pdf_file_buffer = transcript_to_pdf()
         st.download_button(
-            "⭳ PDF", # Shorter label
+            "⭳ PDF",
             data=pdf_file_buffer,
             file_name="chat_transcript.pdf",
             mime="application/pdf",
             key="download_pdf_chat",
-            use_container_width=True # Make button full width of its column
+            use_container_width=True
         )
 
 # --- SIDEBAR DESIGN ---
@@ -505,17 +487,16 @@ with st.sidebar:
     ]
     for q in example_questions:
         if st.button(q, key=q):
-            # When an example question is clicked, add it to messages and trigger response
             st.session_state.messages.append({"role": "user", "content": q})
-            st.session_state.voice_query = "" # Clear any pending voice input
-            # Automatically invoke RAG chain for example questions
+            st.session_state.voice_query = ""
+
             with st.spinner("Thinking..."):
                 try:
                     response = rag_chain.invoke(q)
                 except Exception as e:
                     response = f"Sorry, there was an error processing this example: {e}"
                 st.session_state.messages.append({"role": "assistant", "content": response})
-            st.rerun() # Rerun to display the new messages
+            st.rerun()
 
     st.markdown("---")
     st.markdown(f"""
@@ -526,33 +507,27 @@ with st.sidebar:
 
     st.markdown("<h5 style='margin-bottom:0.65em;margin-top:1.65em;'><b>My Resume</b></h5>", unsafe_allow_html=True)
 
-# Make sure to use the direct download/view link for Google Drive
-resume_url = "https://drive.google.com/uc?export=view&id=1lf5SzSEzrMkj93_8ko_rVVQ03mdnUcHu"
+    resume_url = "https://drive.google.com/uc?export=view&id=1lf5SzSEzrMkj93_8ko_rVVQ03mdnUcHu"
+    pdf_display = f'<iframe src="{resume_url}" width="100%" height="350px" type="application/pdf"></iframe>'
+    st.markdown(pdf_display, unsafe_allow_html=True)
 
-# Embed PDF viewer
-pdf_display = f'<iframe src="{resume_url}" width="100%" height="350px" type="application/pdf"></iframe>'
-st.markdown(pdf_display, unsafe_allow_html=True)
+    st.markdown(
+        f'<a href="{resume_url}" download class="resume-link">⬇️ Download Resume</a>',
+        unsafe_allow_html=True
+    )
 
-# Download link
-st.markdown(
-    f'<a href="{resume_url}" download class="resume-link">⬇️ Download Resume</a>',
-    unsafe_allow_html=True
-)
-
-
-# Footer section with structured markdown
-st.markdown("""
- <div style="margin-top:45px; color:#8998a7; font-size:0.9em; text-align:center;">
-    <p style="margin-bottom: 5px;">© 2025 <b>Sidhanth L</b></p>
-    <p style="margin-bottom: 5px;">Built with 
-        <span style='color:#68d6e3;'>LangChain</span>,
-        <span style='color:#3cbfbe;'>ChromaDB</span>, 
-        <span style='color:#c5ba6a;'>Streamlit</span>,
-        <span style='color:#b836bf;'>Mistral 7B LLM</span>
-    </p>
-    <p style="margin-bottom: 5px;">Powered by RAG · Deployed on Hugging Face Spaces</p>
-    <p>
-        <a href="https://github.com/sidhanth01" style="color:#8baaff;text-decoration:none;">GitHub</a>
-    </p>
-</div>
-""", unsafe_allow_html=True)
+    st.markdown("""
+        <div style="margin-top:45px; color:#8998a7; font-size:0.9em; text-align:center;">
+            <p style="margin-bottom: 5px;">© 2025 <b>Sidhanth L</b></p>
+            <p style="margin-bottom: 5px;">Built with 
+                <span style='color:#68d6e3;'>LangChain</span>,
+                <span style='color:#3cbfbe;'>ChromaDB</span>, 
+                <span style='color:#c5ba6a;'>Streamlit</span>,
+                <span style='color:#b836bf;'>Mistral 7B LLM</span>
+            </p>
+            <p style="margin-bottom: 5px;">Powered by RAG · Deployed on Hugging Face Spaces</p>
+            <p>
+                <a href="https://github.com/sidhanth01" style="color:#8baaff;text-decoration:none;">GitHub</a>
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
