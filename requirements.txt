@@ -1,6 +1,6 @@
 streamlit
 langchain
-langchain-community
+langchain-community>=0.0.30
 langchain-chroma
 chromadb
 python-dotenv
