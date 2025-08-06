@@ -443,7 +443,7 @@ if st.session_state.messages:
         
         # Output PDF to BytesIO buffer
         pdf_output = io.BytesIO()
-        pdf_bytes = pdf.output(dest='S').encode('latin-1') # Get PDF content as bytes
+        pdf_bytes = pdf.output(dest='S')
         pdf_output.write(pdf_bytes)
         pdf_output.seek(0) # Rewind to the beginning
         return pdf_output
