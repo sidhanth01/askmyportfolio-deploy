@@ -2,13 +2,14 @@ import streamlit as st
 import os
 from dotenv import load_dotenv
 import base64
-import io
+import io # Import io for BytesIO
 from fpdf import FPDF
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+# from langchain_community.llms import Ollama # REMOVED: Ollama is for local use
 from langchain_community.llms import HuggingFaceHub
 
 # --- Streamlit Page Configuration ---
@@ -25,180 +26,180 @@ st.markdown("""
 
 /* Overall App Background and Text */
 .stApp {
-    background-color: #121212 !important;
-    color: #e0e0e0 !important;
-    font-family: 'Inter', sans-serif;
+    background-color: #121212 !important; /* Deeper black/dark grey */
+    color: #e0e0e0 !important; /* Light grey for general text */
+    font-family: 'Inter', sans-serif; /* Modern, clean font */
 }
 
 /* Sidebar Styling */
 section[data-testid="stSidebar"] {
-    background-color: #1c1c1c !important;
+    background-color: #1c1c1c !important; /* Slightly lighter dark grey for sidebar */
     color: #e0e0e0 !important;
     min-width: 330px;
-    border-right: 1px solid #333333;
-    box-shadow: 4px 0px 24px rgba(0, 0, 0, 0.2);
-    transition: margin-left 0.3s ease-in-out;
+    border-right: 1px solid #333333; /* Darker border for separation */
+    box-shadow: 4px 0px 24px rgba(0, 0, 0, 0.2); /* More pronounced shadow */
+    transition: margin-left 0.3s ease-in-out; /* Smooth transition for expand/collapse */
 }
 
 /* Sidebar expand/collapse button (hamburger menu) */
 button[data-testid="stSidebarNav"] {
-    display: none !important;
+    display: none !important; /* Add this line to hide the button */
 }
 
 /* Sidebar Buttons */
 .sidebar-items .stButton>button {
     border-radius: 9px;
     margin-bottom: 8px;
-    padding: 0.5em 1em;
+    padding: 0.5em 1em; /* Increased padding */
     color: #e3eded;
-    background: #2a2a2a;
+    background: #2a2a2a; /* Darker background for buttons */
     border: none;
-    font-size: 1.05em;
-    width: 100%;
+    font-size: 1.05em; /* Slightly larger font */
+    width: 100%; /* Make sidebar buttons full width */
     text-align: left;
-    transition: background 0.2s, color 0.2s, transform 0.1s;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: background 0.2s, color 0.2s, transform 0.1s; /* Smooth transitions */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Subtle button shadow */
 }
 .stButton>button:hover {
-    background: #3a3a3a !important;
-    color: #62edc9 !important;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    background: #3a3a3a !important; /* Lighter on hover */
+    color: #62edc9 !important; /* Accent color on hover */
+    transform: translateY(-1px); /* Slight lift effect */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2); /* More pronounced shadow on hover */
 }
 
 /* Adjust top padding for main content area */
-.st-emotion-cache-18ni7ap {
+.st-emotion-cache-18ni7ap { /* This class targets the main content block */
     padding-top: 0.1rem;
 }
-.st-emotion-cache-6qob1r {
+.st-emotion-cache-6qob1r { /* This class targets the sidebar content wrapper */
     min-width: 330px;
 }
 
 /* Main Heading and Tagline */
 .center-title {
     text-align: center;
-    font-family: 'Montserrat', sans-serif;
-    font-size: 3.2em;
+    font-family: 'Montserrat', sans-serif; /* Distinct font for heading */
+    font-size: 3.2em; /* Larger heading */
     font-weight: 700;
-    letter-spacing: 3px;
-    color: #62edc9;
-    text-shadow: 0 0 10px rgba(98, 237, 201, 0.3);
+    letter-spacing: 3px; /* More spacing */
+    color: #62edc9; /* Accent color for main title */
+    text-shadow: 0 0 10px rgba(98, 237, 201, 0.3); /* Subtle glow */
     margin: 0.7em 0 0.1em 0;
 }
 .tagline {
     text-align: center;
-    color: #b0b0b0;
-    font-size: 1.1em;
-    margin-bottom: 2.5em;
+    color: #b0b0b0; /* Softer grey for tagline */
+    font-size: 1.1em; /* Slightly larger tagline */
+    margin-bottom: 2.5em; /* More space below tagline */
 }
 
 /* Chat Message Containers (st.chat_message) */
 [data-testid="stChatMessage"] {
-    padding: 15px 20px;
-    margin-bottom: 12px;
-    border-radius: 22px;
+    padding: 15px 20px; /* More padding */
+    margin-bottom: 12px; /* More space between messages */
+    border-radius: 22px; /* More rounded corners */
     font-size: 1.05em;
     line-height: 1.6;
-    max-width: 770px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    display: flex;
-    align-items: flex-start;
+    max-width: 770px; /* Limit width of chat bubbles */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* Subtle shadow for bubbles */
+    display: flex; /* Enable flexbox for internal alignment (avatar/content) */
+    align-items: flex-start; /* Align items to the top (for avatars) */
 }
 
 /* User Message Bubble (Left aligned) */
 [data-testid="stChatMessage"][data-st-chat-message-type="user"] {
-    background: #2a2a2a;
-    color: #f8f9ff;
-    margin-left: 15px;
-    margin-right: auto;
-    text-align: left;
+    background: #2a2a2a; /* Darker grey for user, consistent with AI's previous background */
+    color: #f8f9ff; /* Very light text */
+    margin-left: 15px; /* Spacing from left edge */
+    margin-right: auto; /* Align user messages to the left */
+    text-align: left; /* Keep text left-aligned within the bubble */
 }
 
 /* Assistant Message Bubble (Right aligned) */
 [data-testid="stChatMessage"][data-st-chat-message-type="assistant"] {
-    background: #33334d;
-    color: #e8ecff;
-    margin-right: 15px;
-    margin-left: auto;
-    text-align: left;
+    background: #33334d; /* Dark blue-purple for AI, consistent with user's previous background */
+    color: #e8ecff; /* Light text */
+    margin-right: 15px; /* Spacing from right edge */
+    margin-left: auto; /* Align assistant messages to the right */
+    text-align: left; /* Keep text left-aligned within the bubble */
 }
 
 /* Avatar Styling within chat messages */
-[data-testid="stChatMessage"][data-st-chat-message-type="user"] .st-emotion-cache-1c7gnj6 {
-    order: 0;
-    margin-right: 12px;
+[data-testid="stChatMessage"][data-st-chat-message-type="user"] .st-emotion-cache-1c7gnj6 { /* User avatar container */
+    order: 0; /* Keep avatar on the left */
+    margin-right: 12px; /* Space after avatar */
     margin-left: 0;
-    align-self: flex-start;
+    align-self: flex-start; /* Align avatar to top of message */
 }
-[data-testid="stChatMessage"][data-st-chat-message-type="assistant"] .st-emotion-cache-1c7gnj6 {
-    order: 1;
-    margin-left: 12px;
+[data-testid="stChatMessage"][data-st-chat-message-type="assistant"] .st-emotion-cache-1c7gnj6 { /* Assistant avatar container */
+    order: 1; /* Move avatar to the right */
+    margin-left: 12px; /* Space after avatar */
     margin-right: 0;
-    align-self: flex-start;
+    align-self: flex-start; /* Align avatar to top of message */
 }
 
 /* Ensure message content takes full width within its bubble */
-[data-testid="stChatMessage"] .st-emotion-cache-1ae02w6 {
+[data-testid="stChatMessage"] .st-emotion-cache-1ae02w6 { /* Message content wrapper */
     flex-grow: 1;
 }
 
 /* Streamlit chat_input (Gemini-like) */
 [data-testid="stChatInput"] {
-    background: #121212;
-    padding: 15px 0;
-    position: fixed;
+    background: #121212; /* Match app background */
+    padding: 15px 0; /* More padding around the input */
+    position: fixed; /* Keep input at the bottom */
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 1000;
-    border-top: 1px solid #333333;
-    box-shadow: 0 -5px 15px rgba(0,0,0,0.3);
+    z-index: 1000; /* Ensure it stays on top */
+    border-top: 1px solid #333333; /* Darker separator line */
+    box-shadow: 0 -5px 15px rgba(0,0,0,0.3); /* Shadow to lift it from content */
 }
 
 /* This targets the actual input box within st.chat_input */
 [data-testid="stChatInput"] > div > div {
-    background: #2a2a2a !important;
-    border-radius: 30px !important;
-    border: 1px solid #444444 !important;
+    background: #2a2a2a !important; /* Input box background */
+    border-radius: 30px !important; /* Even more rounded */
+    border: 1px solid #444444 !important; /* Darker, subtle border */
     color: #e0e0e0 !important;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
-    min-height: 60px;
-    padding: 15px 25px;
-    margin: 0 auto;
-    max-width: 800px;
-    width: calc(100% - 40px);
-    display: flex;
-    align-items: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25); /* More pronounced shadow */
+    min-height: 60px; /* Taller input box */
+    padding: 15px 25px; /* More padding inside the input */
+    margin: 0 auto; /* Center the input box */
+    max-width: 800px; /* Slightly wider input box */
+    width: calc(100% - 40px); /* Adjust width considering margins */
+    display: flex; /* Use flexbox for internal alignment */
+    align-items: center; /* Vertically align content */
 }
 [data-testid="stChatInput"] textarea {
-    color: #e0e0e0 !important;
-    background: transparent !important;
-    resize: none !important;
-    padding: 0;
-    flex-grow: 1;
-    height: auto !important;
-    min-height: 24px;
-    line-height: 1.5;
+    color: #e0e0e0 !important; /* Text color inside input */
+    background: transparent !important; /* Ensure transparent background for text area */
+    resize: none !important; /* Disable manual resize */
+    padding: 0; /* Remove default textarea padding */
+    flex-grow: 1; /* Allow textarea to take available space */
+    height: auto !important; /* Allow height to adjust to content */
+    min-height: 24px; /* Minimum height for one line */
+    line-height: 1.5; /* Consistent line height */
 }
-[data-testid="stChatInput"] ::placeholder {
+[data-testid="stChatInput"] ::placeholder { /* Placeholder text color */
     color: #888888 !important;
     opacity: 1;
 }
 
 /* Specific styling for the submit button inside chat_input */
 [data-testid="stChatInput"] button {
-    background-color: #4CAF50 !important;
+    background-color: #4CAF50 !important; /* Green send button */
     color: white !important;
-    border-radius: 50% !important;
-    width: 48px !important;
-    height: 48px !important;
+    border-radius: 50% !important; /* Circular button */
+    width: 48px !important; /* Larger button */
+    height: 48px !important; /* Larger button */
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
-    flex-shrink: 0;
-    margin-left: 15px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    position: relative; /* Position relative to the flex container */
+    flex-shrink: 0; /* Prevent shrinking */
+    margin-left: 15px; /* Space from text area */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3); /* Button shadow */
     transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
 }
 [data-testid="stChatInput"] button:hover {
@@ -525,7 +526,7 @@ with st.sidebar:
                 <span style='color:#c5ba6a;'>Streamlit</span>,
                 <span style='color:#b836bf;'>Mistral 7B LLM</span>
             </p>
-            <p style="margin-bottom: 5px;">Powered by RAG · Deployed on Hugging Face Spaces</p>
+            <p style="margin-bottom: 5px;'>Powered by RAG · Deployed on Hugging Face Spaces</p>
             <p>
                 <a href="https://github.com/sidhanth01" style="color:#8baaff;text-decoration:none;">GitHub</a>
             </p>
