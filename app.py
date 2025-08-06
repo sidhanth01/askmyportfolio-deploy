@@ -2,28 +2,22 @@ import streamlit as st
 import os
 from dotenv import load_dotenv
 import base64
-import io # Import io for BytesIO
+import io
 from fpdf import FPDF
-
-
-# LangChain and LLM imports
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
-from langchain_community.llms import Ollama
+# from langchain_community.llms import Ollama # REMOVED: Ollama is for local use
 from langchain_community.llms import HuggingFaceHub
-
-
 
 # --- Streamlit Page Configuration ---
 st.set_page_config(
     page_title="Portfolio Explorer",
     layout="wide",
-    initial_sidebar_state="expanded"  # Keeps the sidebar open
+    initial_sidebar_state="expanded"
 )
-
 
 # --- Custom CSS for Gemini-like Dark Theme and Advanced UI ---
 st.markdown("""
@@ -46,34 +40,10 @@ section[data-testid="stSidebar"] {
     box-shadow: 4px 0px 24px rgba(0, 0, 0, 0.2); /* More pronounced shadow */
     transition: margin-left 0.3s ease-in-out; /* Smooth transition for expand/collapse */
 }
-            
-/* Sidebar expand/collapse button (hamburger menu) */
-/* This targets the actual button container for the hamburger menu */
-button[data-testid="stSidebarNav] {
-    position: fixed; /* Keep it fixed */
-    top: 10px; /* Adjust top padding */
-    left: 10px; /* Adjust left padding */
-    z-index: 1001; /* Ensure it's above other elements */
-    background-color: transparent !important; /* Make button background transparent */
-    border: none !important; /* Remove border */
-    box-shadow: none !important; /* Remove shadow */
-}
 
 /* Sidebar expand/collapse button (hamburger menu) */
-/* This targets the actual button container for the hamburger menu */
 button[data-testid="stSidebarNav"] {
     display: none !important; /* Add this line to hide the button */
-}
-
-/* This targets the SVG icon inside the hamburger menu button */
-/* You can now remove this entire block since the button is hidden */
-button[data-testid="stSidebarNav"] svg {
-    color: #4CAF50;
-    font-size: 1.8em;
-    transition: color 0.2s;
-}
-button[data-testid="stSidebarNav"]:hover svg {
-    color: #66BB6A;
 }
 
 /* Sidebar Buttons */
@@ -336,24 +306,9 @@ if not os.path.exists(DATA_PATH):
 
 # Check for existing Chroma DB or ingest data
 if not os.path.exists(CHROMA_DB_PATH) or not os.listdir(CHROMA_DB_PATH):
-    with st.spinner("Setting up knowledge base... This might take a moment."):
-        try:
-            # Dynamically import ingest_data to avoid circular dependencies if it's in a separate file
-            from ingest_data import load_documents, split_documents, create_embeddings_and_store
-            docs = load_documents()
-            if docs:
-                chunks = split_documents(docs)
-                create_embeddings_and_store(chunks)
-                st.success("Knowledge base ready! You can now ask questions.")
-            else:
-                st.error("No documents found in 'data/'. Please upload your resume/portfolio files and restart the application.")
-                st.stop() # Stop execution if no documents are found
-        except ImportError:
-            st.error("Error: 'ingest_data.py' not found. Please ensure it's in the same directory as 'app.py'.")
-            st.stop()
-        except Exception as e:
-            st.error(f"Error during knowledge base setup: {e}. Please check your documents and environment.")
-            st.stop()
+    st.error("Error: The ChromaDB knowledge base was not found. Please pre-ingest your data locally and push the 'chroma_db' directory to your repository.")
+    st.stop()
+
 
 @st.cache_resource
 def get_vector_store():
@@ -365,19 +320,6 @@ def get_vector_store():
 @st.cache_resource
 def get_llm():
     """Caches and returns the Language Model (Ollama or HuggingFaceHub fallback)."""
-    ollama_model = os.getenv("OLLAMA_MODEL")
-    ollama_url = os.getenv("OLLAMA_BASE_URL")
-    if ollama_model and ollama_url:
-        try:
-            # Attempt to connect to Ollama and make a small test call
-            test_llm = Ollama(model=ollama_model, base_url=ollama_url, temperature=0.0, num_predict=384)
-            test_llm.invoke("Hello") # Quick test to check connectivity
-            st.success(f"Successfully connected to Ollama model: {ollama_model}")
-            return test_llm
-        except Exception as e:
-            st.warning(f"Ollama unavailable ({e}). Using HuggingFaceHub fallback. "
-                       "Ensure Ollama server is running and model '{ollama_model}' is pulled.")
-    
     st.info("Using cloud-based LLM (HuggingFaceHub). Performance may vary.")
     hf_token = os.getenv("HF_TOKEN")
     if not hf_token:
@@ -386,7 +328,7 @@ def get_llm():
         st.stop() # Stop if no LLM can be initialized
     return HuggingFaceHub(
         repo_id="google/flan-t5-base", # Consider a more capable model if needed
-         task="text2text-generation",
+        task="text2text-generation",
         model_kwargs={"temperature": 0.0, "max_length": 256},
         huggingfacehub_api_token=hf_token
     )

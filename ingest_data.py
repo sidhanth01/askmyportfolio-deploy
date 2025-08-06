@@ -2,19 +2,10 @@ import os
 import traceback
 from dotenv import load_dotenv
 from glob import glob
-from langchain_community.document_loaders import PyPDFLoader, TextLoader, DirectoryLoader
+from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-
-# Updated import for latest embedding support
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
-
-try:
-    from langchain.document_loaders import UnstructuredMarkdownLoader
-except ImportError:
-    raise ImportError(
-        "UnstructuredMarkdownLoader is missing. Please run: pip install unstructured"
-    )
 
 DATA_PATH = "data/"
 CHROMA_DB_PATH = "chroma_db/"
@@ -23,7 +14,7 @@ EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 # Loader definitions: file pattern, loader class
 SUPPORTED_TYPES = [
     ("**/*.pdf", PyPDFLoader),
-    ("**/*.md", UnstructuredMarkdownLoader),
+    ("**/*.md", TextLoader),
     ("**/*.txt", TextLoader),
 ]
 
@@ -41,10 +32,14 @@ def load_documents():
     for pattern, loader_cls in SUPPORTED_TYPES:
         files = find_files(DATA_PATH, pattern)
         if not files:
-            log(f"  - No files found for {pattern}", "warn")
+            log(f"  - No files found for {pattern}", "warn")
         for path in files:
             try:
-                loader = loader_cls(path)
+                # Add the encoding="utf-8" parameter here
+                if loader_cls == TextLoader:
+                    loader = loader_cls(path, encoding="utf-8")
+                else:
+                    loader = loader_cls(path)
                 loaded = loader.load()
                 for doc in loaded if isinstance(loaded, list) else [loaded]:
                     doc.metadata.update({
@@ -54,7 +49,7 @@ def load_documents():
                     all_docs.append(doc)
             except Exception as e:
                 error_files.append((path, str(e)))
-                log(f"  - Error loading {path}:", "error")
+                log(f"  - Error loading {path}:", "error")
                 traceback.print_exc()
     if not all_docs:
         log(f"No documents found in '{DATA_PATH}'. Place your files there.", "error")
@@ -63,7 +58,7 @@ def load_documents():
     if error_files:
         log(f"\nFiles failed to load ({len(error_files)}):", "warn")
         for file, err in error_files:
-            log(f"  - {file}: {err}", "warn")
+            log(f"  - {file}: {err}", "warn")
     return all_docs
 
 def split_documents(documents, chunk_size=1000, chunk_overlap=200):
@@ -88,7 +83,7 @@ def create_embeddings_and_store(chunks):
     return db
 
 if __name__ == "__main__":
-    load_dotenv()  # Ensure env is loaded if run standalone
+    load_dotenv()
     os.makedirs(DATA_PATH, exist_ok=True)
     os.makedirs(CHROMA_DB_PATH, exist_ok=True)
     log("Starting the data ingestion process...", "info")
