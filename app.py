@@ -19,7 +19,7 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain.prompts import ChatPromptTemplate
 
-import replicate  # Replicate Python client
+import requests  # For Together AI API calls
 
 
 # --- Streamlit Page Configuration ---
@@ -71,26 +71,33 @@ def get_vector_store():
 vectorstore = get_vector_store()
 retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
-# --- Replicate client setup ---
-REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN") or st.secrets.get("REPLICATE_API_TOKEN")
-if not REPLICATE_API_TOKEN:
-    st.error("Replicate API token (REPLICATE_API_TOKEN) not found. Please add it to Streamlit secrets.")
+TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY") or st.secrets.get("TOGETHER_API_KEY")
+if not TOGETHER_API_KEY:
+    st.error("Together AI API key (TOGETHER_API_KEY) not found. Please add it to Streamlit secrets.")
     st.stop()
 
-replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
+# Choose your Together AI model (free-tier recommended: 'togethercomputer/llama-2-7b-chat')
+TOGETHER_MODEL = "togethercomputer/llama-2-7b-chat"
 
-# Choose your Replicate model
-REPLICATE_MODEL = "meta/meta-llama-3-8b"
-
-def call_replicate_llm(prompt: str) -> str:
+def call_together_llm(prompt: str) -> str:
+    url = "https://api.together.xyz/v1/completions"
+    headers = {
+        "Authorization": f"Bearer {TOGETHER_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": TOGETHER_MODEL,
+        "prompt": prompt,
+        "max_tokens": 256,
+        "temperature": 0.0
+    }
     try:
-        output = replicate_client.run(
-            REPLICATE_MODEL,
-            input={"prompt": prompt, "max_length": 256, "temperature": 0.0}
-        )
-        return output
+        response = requests.post(url, headers=headers, json=payload, timeout=60)
+        response.raise_for_status()
+        result = response.json()
+        return result.get("choices", [{}])[0].get("text", "Sorry, no response from Together AI.")
     except Exception as e:
-        return f"Error calling Replicate LLM: {e}"
+        return f"Error calling Together AI LLM: {e}"
 
 # --- RAG prompt template ---
 PROMPT = """
@@ -143,7 +150,7 @@ if user_question and user_question.strip():
                 docs = retriever.get_relevant_documents(user_input)
                 context_text = "\n\n".join([doc.page_content for doc in docs])
                 final_prompt = PROMPT.format(context=context_text, question=user_input)
-                response = call_replicate_llm(final_prompt)
+                response = call_together_llm(final_prompt)
             except Exception as e:
                 response = f"Sorry, there was an error processing your request: {e}. Please try again."
 
@@ -247,7 +254,7 @@ with st.sidebar:
                     docs = retriever.get_relevant_documents(q)
                     context_text = "\n\n".join([doc.page_content for doc in docs])
                     final_prompt = PROMPT.format(context=context_text, question=q)
-                    response = call_replicate_llm(final_prompt)
+                    response = call_together_llm(final_prompt)
                 except Exception as e:
                     response = f"Sorry, there was an error processing this example: {e}"
 

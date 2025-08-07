@@ -9,3 +9,4 @@ sentence-transformers
 fpdf2
 pysqlite3-binary
 replicate
+requests
