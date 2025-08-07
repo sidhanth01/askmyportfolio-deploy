@@ -283,7 +283,7 @@ with st.sidebar:
                 base64_pdf = base64.b64encode(f.read()).decode('utf-8')
 
             # Embed the PDF in an iframe using a data URL
-            pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="350px" type="application/pdf"></iframe>'
+            pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="350px" type="application/pdf" sandbox="allow-same-origin allow-scripts allow-popups"></iframe>'
             st.markdown(pdf_display, unsafe_allow_html=True)
 
             # Create a download button for the local file
