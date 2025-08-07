@@ -274,31 +274,27 @@ with st.sidebar:
 
     try:
         # File path to your local resume
-        # ⚠️ IMPORTANT: Replace 'my_resume.pdf' with the exact name of your file
+        # ⚠️ Make sure this matches your file name exactly
         resume_file_path = "Sidhanth_Resume.pdf"
-
+        
         # Check if the resume file exists
         if os.path.exists(resume_file_path):
             with open(resume_file_path, "rb") as f:
-                base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+                pdf_bytes = f.read()
+            
+            st.markdown("---") # Add a separator for better UI
 
-            # Embed the PDF in an iframe using a data URL
-            pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="350px" type="application/pdf" sandbox="allow-same-origin allow-scripts allow-popups"></iframe>'
-            st.markdown(pdf_display, unsafe_allow_html=True)
-
-            # Create a download button for the local file
-            with open(resume_file_path, "rb") as f2:
-                st.download_button(
-                    label="⬇️ Download Resume",
-                    data=f2.read(),
-                    file_name="my_resume.pdf",
-                    mime="application/pdf",
-                    key="download_resume_button",
-                    use_container_width=True
-                )
+            st.download_button(
+                label="⬇️ View or Download Resume",
+                data=pdf_bytes,
+                file_name="my_resume.pdf",
+                mime="application/pdf",
+                key="download_resume_button",
+                use_container_width=True
+            )
         else:
             st.warning(f"Resume file '{resume_file_path}' not found. Please add it to the project directory.")
-
+            
     except Exception as e:
         st.error(f"Error loading resume: {e}")
 
