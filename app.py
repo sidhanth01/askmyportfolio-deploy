@@ -154,6 +154,7 @@ if "pending_question" not in st.session_state:
 if "awaiting_response" not in st.session_state:
     st.session_state.awaiting_response = False
 
+
 # If user types a question
 if user_question and user_question.strip():
     if not st.session_state.pending_question and not st.session_state.awaiting_response:
@@ -161,14 +162,15 @@ if user_question and user_question.strip():
         st.session_state.pending_question = user_question.strip()
         st.session_state.voice_query = ""
         st.session_state.awaiting_response = True
-        st.experimental_rerun()
+        # Only rerun if not already in a rerun (avoid infinite loop)
+        st.stop()
 
 # If a sidebar question is pending
 if st.session_state.pending_question and not st.session_state.awaiting_response:
     st.session_state.messages.append({"role": "user", "content": st.session_state.pending_question})
     st.session_state.voice_query = ""
     st.session_state.awaiting_response = True
-    st.experimental_rerun()
+    st.stop()
 
 # If awaiting response, process the answer
 if st.session_state.awaiting_response and st.session_state.pending_question:
