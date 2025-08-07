@@ -144,11 +144,18 @@ with chat_display_area:
             with st.chat_message("assistant", avatar="🤖"):
                 st.write(msg["content"])
 
-# --- Chat input processing ---
 user_question = st.chat_input("Ask me about my projects, skills, or career journey...", key="chat_input_main_box")
 
-if user_question and user_question.strip():
-    user_input = user_question.strip()
+# Check if a sidebar question was selected
+sidebar_question = st.session_state.get("sidebar_selected_question", "")
+
+if (user_question and user_question.strip()) or sidebar_question:
+    if sidebar_question:
+        user_input = sidebar_question
+        st.session_state.sidebar_selected_question = ""  # Reset after processing
+    else:
+        user_input = user_question.strip()
+
     if not st.session_state.messages or user_input != st.session_state.messages[-1]["content"]:
         st.session_state.messages.append({"role": "user", "content": user_input})
         st.session_state.voice_query = ""
@@ -163,7 +170,6 @@ if user_question and user_question.strip():
                 response = f"Sorry, there was an error processing your request: {e}. Please try again."
 
         st.session_state.messages.append({"role": "assistant", "content": response})
-        st.experimental_rerun()
 
 
 # --- Download chat transcripts ---
@@ -254,19 +260,7 @@ with st.sidebar:
     ]
     for q in example_questions:
         if st.button(q, key=q):
-            st.session_state.messages.append({"role": "user", "content": q})
-            st.session_state.voice_query = ""
-
-            with st.spinner("Thinking..."):
-                try:
-                    docs = retriever.get_relevant_documents(q)
-                    context_text = "\n\n".join([doc.page_content for doc in docs])
-                    final_prompt = PROMPT.format(context=context_text, question=q)
-                    response = call_together_llm(final_prompt)
-                except Exception as e:
-                    response = f"Sorry, there was an error processing this example: {e}"
-
-            st.session_state.messages.append({"role": "assistant", "content": response})
+            st.session_state.sidebar_selected_question = q
 
     st.markdown("---")
     st.markdown("""
