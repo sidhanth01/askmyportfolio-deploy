@@ -195,7 +195,7 @@ if st.session_state.messages:
             pdf.ln(2)
 
         pdf_output = io.BytesIO()
-        pdf_bytes = pdf.output(dest='S').encode('latin-1')
+        pdf_bytes = pdf.output(dest='S')
         pdf_output.write(pdf_bytes)
         pdf_output.seek(0)
         return pdf_output
