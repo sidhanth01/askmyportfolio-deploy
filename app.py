@@ -80,7 +80,7 @@ if not REPLICATE_API_TOKEN:
 replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 
 # Choose your Replicate model
-REPLICATE_MODEL = "meta/llama-3-8b"
+REPLICATE_MODEL = "meta/meta-llama-3-8b"
 
 def call_replicate_llm(prompt: str) -> str:
     try:
