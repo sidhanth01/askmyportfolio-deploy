@@ -146,16 +146,20 @@ with chat_display_area:
 
 user_question = st.chat_input("Ask me about my projects, skills, or career journey...", key="chat_input_main_box")
 
-# Check if a sidebar question was selected
-sidebar_question = st.session_state.get("sidebar_selected_question", "")
 
-if (user_question and user_question.strip()) or sidebar_question:
-    if sidebar_question:
-        user_input = sidebar_question
-        st.session_state.sidebar_selected_question = ""  # Reset after processing
-    else:
-        user_input = user_question.strip()
+# --- Unified chat input processing (typed or sidebar) ---
+if "pending_question" not in st.session_state:
+    st.session_state.pending_question = ""
 
+# If user types a question
+if user_question and user_question.strip():
+    if not st.session_state.pending_question:
+        st.session_state.pending_question = user_question.strip()
+
+# If a sidebar question is pending
+if st.session_state.pending_question:
+    user_input = st.session_state.pending_question
+    # Prevent duplicate answers for repeated clicks
     if not st.session_state.messages or user_input != st.session_state.messages[-1]["content"]:
         st.session_state.messages.append({"role": "user", "content": user_input})
         st.session_state.voice_query = ""
@@ -170,6 +174,8 @@ if (user_question and user_question.strip()) or sidebar_question:
                 response = f"Sorry, there was an error processing your request: {e}. Please try again."
 
         st.session_state.messages.append({"role": "assistant", "content": response})
+    # Clear pending question after processing
+    st.session_state.pending_question = ""
 
 
 # --- Download chat transcripts ---
@@ -260,7 +266,8 @@ with st.sidebar:
     ]
     for q in example_questions:
         if st.button(q, key=q):
-            st.session_state.sidebar_selected_question = q
+            if not st.session_state.pending_question:
+                st.session_state.pending_question = q
 
     st.markdown("---")
     st.markdown("""
