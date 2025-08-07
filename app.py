@@ -149,7 +149,7 @@ if user_question:
     # Set pending question and awaiting response flag
     st.session_state.pending_question = user_question
     st.session_state.awaiting_response = True
-    st.experimental_rerun()
+    st.rerun()
 
 # -- If waiting response, generate it now --
 if st.session_state.awaiting_response and st.session_state.pending_question:
@@ -166,7 +166,7 @@ if st.session_state.awaiting_response and st.session_state.pending_question:
     st.session_state.messages.append({"role": "assistant", "content": response})
     st.session_state.pending_question = ""
     st.session_state.awaiting_response = False
-    st.experimental_rerun()
+    st.rerun()
 
 # --- Download chat transcripts ---
 if st.session_state.messages:
@@ -261,7 +261,7 @@ with st.sidebar:
                 st.session_state.messages.append({"role": "user", "content": q})
                 st.session_state.pending_question = q
                 st.session_state.awaiting_response = True
-                st.experimental_rerun()
+                st.rerun()
 
     st.markdown("---")
     st.markdown("""
