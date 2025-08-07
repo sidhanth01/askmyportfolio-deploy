@@ -77,7 +77,7 @@ if not TOGETHER_API_KEY:
     st.stop()
 
 # Choose a Together AI serverless chat model (free-tier):
-TOGETHER_MODEL = "meta-llama/Llama-3-8B-Instruct"
+TOGETHER_MODEL = "mistralai/Mistral-7B-Instruct-v0.2"
 
 def call_together_llm(prompt: str) -> str:
     url = "https://api.together.xyz/v1/chat/completions"
