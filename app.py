@@ -1,7 +1,6 @@
 import streamlit as st
 import os
 from dotenv import load_dotenv
-import base64
 import io  # for BytesIO
 from fpdf import FPDF
 
@@ -20,7 +19,6 @@ from langchain_chroma import Chroma
 from langchain.prompts import ChatPromptTemplate
 
 import requests  # For Together AI API calls
-
 
 # --- Streamlit Page Configuration ---
 st.set_page_config(
@@ -71,12 +69,13 @@ def get_vector_store():
 vectorstore = get_vector_store()
 retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
+# Together AI API key
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY") or st.secrets.get("TOGETHER_API_KEY")
 if not TOGETHER_API_KEY:
     st.error("Together AI API key (TOGETHER_API_KEY) not found. Please add it to Streamlit secrets.")
     st.stop()
 
-# Choose a Together AI serverless chat model (free-tier):
+# Together AI model slug
 TOGETHER_MODEL = "mistralai/Mistral-7B-Instruct-v0.2"
 
 def call_together_llm(prompt: str) -> str:
@@ -107,7 +106,7 @@ def call_together_llm(prompt: str) -> str:
     except Exception as e:
         return f"Error calling Together AI LLM: {e}"
 
-# --- RAG prompt template ---
+# RAG prompt template
 PROMPT = """
 You are an AI assistant designed to answer questions about a user's professional portfolio and projects.
 Use ONLY the provided context to answer. If you cannot find the answer in the context, clearly state: "Sorry, I could not find that information in the current portfolio documentation."
@@ -127,72 +126,55 @@ Answer:"""
 
 prompt_template = ChatPromptTemplate.from_template(PROMPT)
 
-# --- Initialize session state ---
+# Initialize session state
 if "messages" not in st.session_state:
     st.session_state.messages = []
-if "voice_query" not in st.session_state:
-    st.session_state.voice_query = ""
+if "awaiting_response" not in st.session_state:
+    st.session_state.awaiting_response = False
+if "pending_question" not in st.session_state:
+    st.session_state.pending_question = ""
 
-# --- Display chat messages ---
+# Display all chat messages
 chat_display_area = st.container()
 with chat_display_area:
     for msg in st.session_state.messages:
-        if msg["role"] == "user":
-            with st.chat_message("user", avatar="🧑‍💼"):
-                st.write(msg["content"])
-        else:
-            with st.chat_message("assistant", avatar="🤖"):
-                st.write(msg["content"])
+        role = msg["role"]
+        avatar = "🧑‍💼" if role == "user" else "🤖"
+        with st.chat_message(role, avatar=avatar):
+            st.write(msg["content"])
 
+# Text input for user question
 user_question = st.chat_input("Ask me about my projects, skills, or career journey...", key="chat_input_main_box")
 
-
-
-# --- Unified chat input processing (typed or sidebar) ---
-if "pending_question" not in st.session_state:
-    st.session_state.pending_question = ""
-if "awaiting_response" not in st.session_state:
-    st.session_state.awaiting_response = False
-
-
-# If user types a question
-if user_question and user_question.strip():
-    if not st.session_state.pending_question and not st.session_state.awaiting_response:
-        st.session_state.messages.append({"role": "user", "content": user_question.strip()})
-        st.session_state.pending_question = user_question.strip()
-        st.session_state.voice_query = ""
-        st.session_state.awaiting_response = True
-        st.experimental_rerun()
-
-# If a sidebar question is pending
-if st.session_state.pending_question and not st.session_state.awaiting_response:
-    st.session_state.messages.append({"role": "user", "content": st.session_state.pending_question})
-    st.session_state.voice_query = ""
+# If user types or submits question, immediately add as message and mark for response generation
+if user_question:
+    st.session_state.messages.append({"role": "user", "content": user_question})
+    st.session_state.pending_question = user_question
     st.session_state.awaiting_response = True
     st.experimental_rerun()
 
-# If awaiting response, process the answer
+# If awaiting response from LLM, call retriever + LLM and append results
 if st.session_state.awaiting_response and st.session_state.pending_question:
-    user_input = st.session_state.pending_question
     with st.spinner("Thinking..."):
         try:
-            docs = retriever.get_relevant_documents(user_input)
+            docs = retriever.get_relevant_documents(st.session_state.pending_question)
             context_text = "\n\n".join([doc.page_content for doc in docs])
-            final_prompt = PROMPT.format(context=context_text, question=user_input)
+            final_prompt = PROMPT.format(context=context_text, question=st.session_state.pending_question)
             response = call_together_llm(final_prompt)
         except Exception as e:
-            response = f"Sorry, there was an error processing your request: {e}. Please try again."
+            response = f"Sorry, there was an error processing your request: {e}"
 
     st.session_state.messages.append({"role": "assistant", "content": response})
     st.session_state.pending_question = ""
     st.session_state.awaiting_response = False
+    st.experimental_rerun()
 
 
 # --- Download chat transcripts ---
 if st.session_state.messages:
 
     def transcript_content():
-        return "\n".join([f"{'USER:' if m['role']=='user' else 'AI:'} {m['content']}" for m in st.session_state.messages])
+        return "\n".join([f"{'USER:' if m['role'] == 'user' else 'AI:'} {m['content']}" for m in st.session_state.messages])
 
     def safe_text(text):
         replacements = {'—': '-', '–': '-', '’': "'", '“': '"', '”': '"', '…': '...'}
@@ -242,7 +224,7 @@ if st.session_state.messages:
             use_container_width=True,
         )
 
-# --- Sidebar with example prompts and resume ---
+# --- Sidebar with example questions and resume ---
 with st.sidebar:
     st.markdown('<div style="font-weight:600; font-size:1.21em;margin-top:-0.7em;">💬 Interview Prompts</div>', unsafe_allow_html=True)
     example_questions = [
@@ -276,8 +258,11 @@ with st.sidebar:
     ]
     for q in example_questions:
         if st.button(q, key=q):
-            if not st.session_state.pending_question:
+            if not st.session_state.awaiting_response:
+                st.session_state.messages.append({"role": "user", "content": q})
                 st.session_state.pending_question = q
+                st.session_state.awaiting_response = True
+                st.experimental_rerun()
 
     st.markdown("---")
     st.markdown("""
@@ -305,7 +290,7 @@ with st.sidebar:
                 <span style='color:#68d6e3;'>LangChain</span>,
                 <span style='color:#3cbfbe;'>ChromaDB</span>, 
                 <span style='color:#c5ba6a;'>Streamlit</span>,
-                <span style='color:#b836bf;'>Custom LLM via Replicate</span>
+                <span style='color:#b836bf;'>Custom LLM via Together AI</span>
             </p>
             <p style="margin-bottom: 5px;">Powered by RAG · Deployed on Streamlit Community Cloud</p>
             <p>
