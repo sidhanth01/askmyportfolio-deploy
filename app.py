@@ -147,37 +147,44 @@ with chat_display_area:
 user_question = st.chat_input("Ask me about my projects, skills, or career journey...", key="chat_input_main_box")
 
 
+
 # --- Unified chat input processing (typed or sidebar) ---
 if "pending_question" not in st.session_state:
     st.session_state.pending_question = ""
-
+if "awaiting_response" not in st.session_state:
+    st.session_state.awaiting_response = False
 
 # If user types a question
 if user_question and user_question.strip():
-    if not st.session_state.pending_question:
-        # Add user message immediately and set pending question
+    if not st.session_state.pending_question and not st.session_state.awaiting_response:
         st.session_state.messages.append({"role": "user", "content": user_question.strip()})
         st.session_state.pending_question = user_question.strip()
         st.session_state.voice_query = ""
+        st.session_state.awaiting_response = True
         st.experimental_rerun()
 
 # If a sidebar question is pending
-if st.session_state.pending_question:
-    user_input = st.session_state.pending_question
-    # Only process if last message is user's question and not already answered
-    if st.session_state.messages and st.session_state.messages[-1]["role"] == "user" and (
-        len(st.session_state.messages) == 1 or st.session_state.messages[-2]["role"] != "assistant"):
-        with st.spinner("Thinking..."):
-            try:
-                docs = retriever.get_relevant_documents(user_input)
-                context_text = "\n\n".join([doc.page_content for doc in docs])
-                final_prompt = PROMPT.format(context=context_text, question=user_input)
-                response = call_together_llm(final_prompt)
-            except Exception as e:
-                response = f"Sorry, there was an error processing your request: {e}. Please try again."
+if st.session_state.pending_question and not st.session_state.awaiting_response:
+    st.session_state.messages.append({"role": "user", "content": st.session_state.pending_question})
+    st.session_state.voice_query = ""
+    st.session_state.awaiting_response = True
+    st.experimental_rerun()
 
-        st.session_state.messages.append({"role": "assistant", "content": response})
-        st.session_state.pending_question = ""
+# If awaiting response, process the answer
+if st.session_state.awaiting_response and st.session_state.pending_question:
+    user_input = st.session_state.pending_question
+    with st.spinner("Thinking..."):
+        try:
+            docs = retriever.get_relevant_documents(user_input)
+            context_text = "\n\n".join([doc.page_content for doc in docs])
+            final_prompt = PROMPT.format(context=context_text, question=user_input)
+            response = call_together_llm(final_prompt)
+        except Exception as e:
+            response = f"Sorry, there was an error processing your request: {e}. Please try again."
+
+    st.session_state.messages.append({"role": "assistant", "content": response})
+    st.session_state.pending_question = ""
+    st.session_state.awaiting_response = False
 
 
 # --- Download chat transcripts ---
