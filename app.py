@@ -162,15 +162,14 @@ if user_question and user_question.strip():
         st.session_state.pending_question = user_question.strip()
         st.session_state.voice_query = ""
         st.session_state.awaiting_response = True
-        # Only rerun if not already in a rerun (avoid infinite loop)
-        st.stop()
+        st.experimental_rerun()
 
 # If a sidebar question is pending
 if st.session_state.pending_question and not st.session_state.awaiting_response:
     st.session_state.messages.append({"role": "user", "content": st.session_state.pending_question})
     st.session_state.voice_query = ""
     st.session_state.awaiting_response = True
-    st.stop()
+    st.experimental_rerun()
 
 # If awaiting response, process the answer
 if st.session_state.awaiting_response and st.session_state.pending_question:
