@@ -76,8 +76,8 @@ if not TOGETHER_API_KEY:
     st.error("Together AI API key (TOGETHER_API_KEY) not found. Please add it to Streamlit secrets.")
     st.stop()
 
-# Choose your Together AI model (free-tier recommended: 'togethercomputer/llama-2-7b-chat')
-TOGETHER_MODEL = "togethercomputer/llama-2-7b-chat"
+# Choose a Together AI serverless chat model (free-tier):
+TOGETHER_MODEL = "meta-llama/Llama-3-8B-Instruct"
 
 def call_together_llm(prompt: str) -> str:
     url = "https://api.together.xyz/v1/chat/completions"
