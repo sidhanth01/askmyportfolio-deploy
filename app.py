@@ -1,17 +1,16 @@
 import streamlit as st
 import os
 from dotenv import load_dotenv
-import io  # for BytesIO
+import io  # For BytesIO
 from fpdf import FPDF
+from fpdf.enums import XPos, YPos
 
-# SQLite version fix for ChromaDB on Streamlit Cloud with Python 3.11
-# MUST be before importing langchain_chroma or chromadb
+# SQLite version fix for ChromaDB on Streamlit Cloud (important to do before LangChain/Chroma imports)
 try:
     __import__('pysqlite3')
     import sys
     sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 except Exception:
-    # Fallback to default sqlite3, might cause sqlite version error
     pass
 
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -27,14 +26,14 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- Custom CSS (Paste your full CSS here) ---
+# --- Custom CSS ---
 st.markdown("""
 <style>
-/* Your full Gemini dark theme CSS goes here */
+/* Paste your complete Gemini dark theme CSS here */
 </style>
 """, unsafe_allow_html=True)
 
-# --- HEADING AND TAGLINE ---
+# --- Heading and Tagline ---
 st.markdown('''
 <h1 style="text-align:center; font-size:2.8em; font-weight:800; color:#FFFFFF; margin-bottom:0.1em;">
     Ask-My-Portfolio
@@ -44,38 +43,37 @@ st.markdown('''
 </div>
 ''', unsafe_allow_html=True)
 
-# --- ENV & DB SETUP ---
+# --- Load Environment Variables ---
 load_dotenv()
+
 DATA_PATH = "data/"
 CHROMA_DB_PATH = "chroma_db/"
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 
+# Ensure data dir exists
 if not os.path.exists(DATA_PATH):
     os.makedirs(DATA_PATH)
 
+# Check Chroma DB exists
 if not os.path.exists(CHROMA_DB_PATH) or not os.listdir(CHROMA_DB_PATH):
-    st.error(
-        "Error: The ChromaDB knowledge base was not found. "
-        "Please pre-ingest your data locally and push the 'chroma_db' directory to your repository."
-    )
+    st.error("Error: The ChromaDB knowledge base was not found. Please ingest your data locally and push 'chroma_db' directory.")
     st.stop()
 
 @st.cache_resource
 def get_vector_store():
     embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
-    db = Chroma(persist_directory=CHROMA_DB_PATH, embedding_function=embeddings)
-    return db
+    return Chroma(persist_directory=CHROMA_DB_PATH, embedding_function=embeddings)
 
 vectorstore = get_vector_store()
 retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
-# Together AI API key
+# Together AI API key from secrets or env
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY") or st.secrets.get("TOGETHER_API_KEY")
 if not TOGETHER_API_KEY:
     st.error("Together AI API key (TOGETHER_API_KEY) not found. Please add it to Streamlit secrets.")
     st.stop()
 
-# Together AI model slug
+# Together AI model slug (update if needed)
 TOGETHER_MODEL = "mistralai/Mistral-7B-Instruct-v0.2"
 
 def call_together_llm(prompt: str) -> str:
@@ -106,7 +104,7 @@ def call_together_llm(prompt: str) -> str:
     except Exception as e:
         return f"Error calling Together AI LLM: {e}"
 
-# RAG prompt template
+# --- Prompt Template ---
 PROMPT = """
 You are an AI assistant designed to answer questions about a user's professional portfolio and projects.
 Use ONLY the provided context to answer. If you cannot find the answer in the context, clearly state: "Sorry, I could not find that information in the current portfolio documentation."
@@ -123,10 +121,9 @@ Context:
 Question: {question}
 
 Answer:"""
-
 prompt_template = ChatPromptTemplate.from_template(PROMPT)
 
-# Initialize session state
+# --- Initialize session state ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "awaiting_response" not in st.session_state:
@@ -134,26 +131,27 @@ if "awaiting_response" not in st.session_state:
 if "pending_question" not in st.session_state:
     st.session_state.pending_question = ""
 
-# Display all chat messages
+# --- Display chat messages ---
 chat_display_area = st.container()
 with chat_display_area:
     for msg in st.session_state.messages:
-        role = msg["role"]
-        avatar = "🧑‍💼" if role == "user" else "🤖"
-        with st.chat_message(role, avatar=avatar):
+        avatar = "🧑‍💼" if msg["role"] == "user" else "🤖"
+        with st.chat_message(msg["role"], avatar=avatar):
             st.write(msg["content"])
 
-# Text input for user question
+# --- User input ---
 user_question = st.chat_input("Ask me about my projects, skills, or career journey...", key="chat_input_main_box")
 
-# If user types or submits question, immediately add as message and mark for response generation
+# Handle typed input
 if user_question:
+    # Add question immediately
     st.session_state.messages.append({"role": "user", "content": user_question})
+    # Set pending question and awaiting response flag
     st.session_state.pending_question = user_question
     st.session_state.awaiting_response = True
     st.experimental_rerun()
 
-# If awaiting response from LLM, call retriever + LLM and append results
+# -- If waiting response, generate it now --
 if st.session_state.awaiting_response and st.session_state.pending_question:
     with st.spinner("Thinking..."):
         try:
@@ -164,21 +162,21 @@ if st.session_state.awaiting_response and st.session_state.pending_question:
         except Exception as e:
             response = f"Sorry, there was an error processing your request: {e}"
 
+    # Append assistant response
     st.session_state.messages.append({"role": "assistant", "content": response})
     st.session_state.pending_question = ""
     st.session_state.awaiting_response = False
     st.experimental_rerun()
 
-
 # --- Download chat transcripts ---
 if st.session_state.messages:
 
     def transcript_content():
-        return "\n".join([f"{'USER:' if m['role'] == 'user' else 'AI:'} {m['content']}" for m in st.session_state.messages])
+        return "\n".join([f"{'USER:' if m['role']=='user' else 'AI:'} {m['content']}" for m in st.session_state.messages])
 
     def safe_text(text):
         replacements = {'—': '-', '–': '-', '’': "'", '“': '"', '”': '"', '…': '...'}
-        for k, v in replacements.items():
+        for k,v in replacements.items():
             text = text.replace(k, v)
         return text.encode("ascii", "ignore").decode("ascii")
 
@@ -186,18 +184,19 @@ if st.session_state.messages:
         pdf = FPDF()
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
-        pdf.set_font("Arial", size=11)
+        pdf.set_font("Helvetica", size=11)
 
         for msg in st.session_state.messages:
             role_label = "USER:" if msg["role"] == "user" else "AI:"
-            pdf.set_font("Arial", "B", 11)
-            pdf.cell(0, 8, safe_text(role_label), ln=1)
-            pdf.set_font("Arial", "", 11)
+            pdf.set_font("Helvetica", "B", 11)
+            pdf.cell(0, 8, safe_text(role_label), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            pdf.set_font("Helvetica", "", 11)
             pdf.multi_cell(0, 8, safe_text(msg["content"]))
             pdf.ln(2)
 
         pdf_output = io.BytesIO()
-        pdf.output(pdf_output)
+        pdf_bytes = pdf.output(dest='S').encode('latin-1')
+        pdf_output.write(pdf_bytes)
         pdf_output.seek(0)
         return pdf_output
 
@@ -224,7 +223,7 @@ if st.session_state.messages:
             use_container_width=True,
         )
 
-# --- Sidebar with example questions and resume ---
+# --- Sidebar with example questions and resume embed ---
 with st.sidebar:
     st.markdown('<div style="font-weight:600; font-size:1.21em;margin-top:-0.7em;">💬 Interview Prompts</div>', unsafe_allow_html=True)
     example_questions = [
@@ -272,8 +271,6 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("<h5 style='margin-bottom:0.65em;margin-top:1.65em;'><b>My Resume</b></h5>", unsafe_allow_html=True)
-
     resume_url = "https://drive.google.com/uc?export=view&id=1lf5SzSEzrMkj93_8ko_rVVQ03mdnUcHu"
     pdf_display = f'<iframe src="{resume_url}" width="100%" height="350px" type="application/pdf"></iframe>'
     st.markdown(pdf_display, unsafe_allow_html=True)
@@ -286,9 +283,9 @@ with st.sidebar:
     st.markdown("""
         <div style="margin-top:45px; color:#8998a7; font-size:0.9em; text-align:center;">
             <p style="margin-bottom: 5px;">© 2025 <b>Sidhanth L</b></p>
-            <p style="margin-bottom: 5px;">Built with 
+            <p style="margin-bottom: 5px;">Built with
                 <span style='color:#68d6e3;'>LangChain</span>,
-                <span style='color:#3cbfbe;'>ChromaDB</span>, 
+                <span style='color:#3cbfbe;'>ChromaDB</span>,
                 <span style='color:#c5ba6a;'>Streamlit</span>,
                 <span style='color:#b836bf;'>Custom LLM via Together AI</span>
             </p>
