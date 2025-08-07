@@ -151,19 +151,22 @@ user_question = st.chat_input("Ask me about my projects, skills, or career journ
 if "pending_question" not in st.session_state:
     st.session_state.pending_question = ""
 
+
 # If user types a question
 if user_question and user_question.strip():
     if not st.session_state.pending_question:
+        # Add user message immediately and set pending question
+        st.session_state.messages.append({"role": "user", "content": user_question.strip()})
         st.session_state.pending_question = user_question.strip()
+        st.session_state.voice_query = ""
+        st.experimental_rerun()
 
 # If a sidebar question is pending
 if st.session_state.pending_question:
     user_input = st.session_state.pending_question
-    # Prevent duplicate answers for repeated clicks
-    if not st.session_state.messages or user_input != st.session_state.messages[-1]["content"]:
-        st.session_state.messages.append({"role": "user", "content": user_input})
-        st.session_state.voice_query = ""
-
+    # Only process if last message is user's question and not already answered
+    if st.session_state.messages and st.session_state.messages[-1]["role"] == "user" and (
+        len(st.session_state.messages) == 1 or st.session_state.messages[-2]["role"] != "assistant"):
         with st.spinner("Thinking..."):
             try:
                 docs = retriever.get_relevant_documents(user_input)
@@ -174,8 +177,7 @@ if st.session_state.pending_question:
                 response = f"Sorry, there was an error processing your request: {e}. Please try again."
 
         st.session_state.messages.append({"role": "assistant", "content": response})
-    # Clear pending question after processing
-    st.session_state.pending_question = ""
+        st.session_state.pending_question = ""
 
 
 # --- Download chat transcripts ---
