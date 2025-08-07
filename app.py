@@ -80,14 +80,17 @@ if not TOGETHER_API_KEY:
 TOGETHER_MODEL = "togethercomputer/llama-2-7b-chat"
 
 def call_together_llm(prompt: str) -> str:
-    url = "https://api.together.xyz/v1/completions"
+    url = "https://api.together.xyz/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {TOGETHER_API_KEY}",
         "Content-Type": "application/json"
     }
     payload = {
         "model": TOGETHER_MODEL,
-        "prompt": prompt,
+        "messages": [
+            {"role": "system", "content": "You are an AI assistant."},
+            {"role": "user", "content": prompt}
+        ],
         "max_tokens": 256,
         "temperature": 0.0
     }
@@ -95,7 +98,7 @@ def call_together_llm(prompt: str) -> str:
         response = requests.post(url, headers=headers, json=payload, timeout=60)
         response.raise_for_status()
         result = response.json()
-        return result.get("choices", [{}])[0].get("text", "Sorry, no response from Together AI.")
+        return result.get("choices", [{}])[0].get("message", {}).get("content", "Sorry, no response from Together AI.")
     except Exception as e:
         return f"Error calling Together AI LLM: {e}"
 
