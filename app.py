@@ -271,7 +271,7 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
 
-    resume_url = "https://drive.google.com/uc?export=view&id=1lf5SzSEzrMkj93_8ko_rVVQ03mdnUcHu"
+    resume_url = "https://drive.google.com/file/d/1lfS5zSEzrMkj93_8ko_rVYQ03mdnUcHu/view?usp=sharing"
     pdf_display = f'<iframe src="{resume_url}" width="100%" height="350px" type="application/pdf"></iframe>'
     st.markdown(pdf_display, unsafe_allow_html=True)
 
