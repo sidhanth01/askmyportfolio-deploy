@@ -2,6 +2,7 @@ import streamlit as st
 import os
 from dotenv import load_dotenv
 import io  # For BytesIO
+import base64
 from fpdf import FPDF
 from fpdf.enums import XPos, YPos
 
@@ -271,14 +272,35 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
 
-    resume_url = "https://drive.google.com/file/d/1lfS5zSEzrMkj93_8ko_rVYQ03mdnUcHu/view?usp=sharing"
-    pdf_display = f'<iframe src="{resume_url}" width="100%" height="350px" type="application/pdf"></iframe>'
-    st.markdown(pdf_display, unsafe_allow_html=True)
+    try:
+        # File path to your local resume
+        # ⚠️ IMPORTANT: Replace 'my_resume.pdf' with the exact name of your file
+        resume_file_path = "Sidhanth_Resume.pdf"
 
-    st.markdown(
-        f'<a href="{resume_url}" download class="resume-link">⬇️ Download Resume</a>',
-        unsafe_allow_html=True
-    )
+        # Check if the resume file exists
+        if os.path.exists(resume_file_path):
+            with open(resume_file_path, "rb") as f:
+                base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+
+            # Embed the PDF in an iframe using a data URL
+            pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="350px" type="application/pdf"></iframe>'
+            st.markdown(pdf_display, unsafe_allow_html=True)
+
+            # Create a download button for the local file
+            with open(resume_file_path, "rb") as f2:
+                st.download_button(
+                    label="⬇️ Download Resume",
+                    data=f2.read(),
+                    file_name="my_resume.pdf",
+                    mime="application/pdf",
+                    key="download_resume_button",
+                    use_container_width=True
+                )
+        else:
+            st.warning(f"Resume file '{resume_file_path}' not found. Please add it to the project directory.")
+
+    except Exception as e:
+        st.error(f"Error loading resume: {e}")
 
     st.markdown("""
         <div style="margin-top:45px; color:#8998a7; font-size:0.9em; text-align:center;">
