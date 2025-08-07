@@ -18,10 +18,9 @@ except Exception:
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnablePassthrough
-from langchain_core.output_parsers import StrOutputParser
 
 import replicate  # Replicate Python client
+
 
 # --- Streamlit Page Configuration ---
 st.set_page_config(
@@ -30,10 +29,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- Custom CSS (keep your entire CSS here, truncated for brevity) ---
+# --- Custom CSS (Paste your full CSS here) ---
 st.markdown("""
 <style>
-/* Paste your full CSS here */
+/* Your full Gemini dark theme CSS goes here */
 </style>
 """, unsafe_allow_html=True)
 
@@ -63,7 +62,6 @@ if not os.path.exists(CHROMA_DB_PATH) or not os.listdir(CHROMA_DB_PATH):
     )
     st.stop()
 
-# Restore initialization after error block
 @st.cache_resource
 def get_vector_store():
     embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
@@ -81,13 +79,10 @@ if not REPLICATE_API_TOKEN:
 
 replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 
-# You can replace this with any available Replicate model you want
+# Choose your Replicate model
 REPLICATE_MODEL = "replicate/flan-t5-base"
 
 def call_replicate_llm(prompt: str) -> str:
-    """
-    Calls the Replicate model API and returns the generated text output.
-    """
     try:
         output = replicate_client.run(
             REPLICATE_MODEL,
@@ -117,16 +112,16 @@ Answer:"""
 
 prompt_template = ChatPromptTemplate.from_template(PROMPT)
 
-# --- Session State Initialization ---
+# --- Initialize session state ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "voice_query" not in st.session_state:
     st.session_state.voice_query = ""
 
-# --- Chat messages display ---
+# --- Display chat messages ---
 chat_display_area = st.container()
 with chat_display_area:
-    for idx, msg in enumerate(st.session_state.messages):
+    for msg in st.session_state.messages:
         if msg["role"] == "user":
             with st.chat_message("user", avatar="🧑‍💼"):
                 st.write(msg["content"])
@@ -134,28 +129,27 @@ with chat_display_area:
             with st.chat_message("assistant", avatar="🤖"):
                 st.write(msg["content"])
 
-# --- Chat input and processing ---
+# --- Chat input processing ---
 user_question = st.chat_input("Ask me about my projects, skills, or career journey...", key="chat_input_main_box")
 
-if user_question and user_question.strip() != "":
-    if not st.session_state.messages or user_question.strip() != st.session_state.messages[-1]["content"]:
-        st.session_state.messages.append({"role": "user", "content": user_question.strip()})
+if user_question and user_question.strip():
+    user_input = user_question.strip()
+    if not st.session_state.messages or user_input != st.session_state.messages[-1]["content"]:
+        st.session_state.messages.append({"role": "user", "content": user_input})
         st.session_state.voice_query = ""
 
         with st.spinner("Thinking..."):
             try:
-                # Retrieve relevant documents for context
-                docs = retriever.get_relevant_documents(user_question.strip())
+                docs = retriever.get_relevant_documents(user_input)
                 context_text = "\n\n".join([doc.page_content for doc in docs])
-                final_prompt = PROMPT.format(context=context_text, question=user_question.strip())
-
-                # Call Replicate LLM with the prompt
+                final_prompt = PROMPT.format(context=context_text, question=user_input)
                 response = call_replicate_llm(final_prompt)
             except Exception as e:
                 response = f"Sorry, there was an error processing your request: {e}. Please try again."
 
-            st.session_state.messages.append({"role": "assistant", "content": response})
+        st.session_state.messages.append({"role": "assistant", "content": response})
         st.experimental_rerun()
+
 
 # --- Download chat transcripts ---
 if st.session_state.messages:
@@ -201,17 +195,17 @@ if st.session_state.messages:
             use_container_width=True,
         )
     with download_cols[2]:
-        pdf_file_buffer = transcript_to_pdf()
+        pdf_buffer = transcript_to_pdf()
         st.download_button(
             "⭳ PDF",
-            data=pdf_file_buffer,
+            data=pdf_buffer,
             file_name="chat_transcript.pdf",
             mime="application/pdf",
             key="download_pdf_chat",
             use_container_width=True,
         )
 
-# --- Sidebar with example questions and resume embed ---
+# --- Sidebar with example prompts and resume ---
 with st.sidebar:
     st.markdown('<div style="font-weight:600; font-size:1.21em;margin-top:-0.7em;">💬 Interview Prompts</div>', unsafe_allow_html=True)
     example_questions = [
@@ -256,7 +250,8 @@ with st.sidebar:
                     response = call_replicate_llm(final_prompt)
                 except Exception as e:
                     response = f"Sorry, there was an error processing this example: {e}"
-                st.session_state.messages.append({"role": "assistant", "content": response})
+
+            st.session_state.messages.append({"role": "assistant", "content": response})
             st.experimental_rerun()
 
     st.markdown("---")
@@ -282,11 +277,11 @@ with st.sidebar:
         <div style="margin-top:45px; color:#8998a7; font-size:0.9em; text-align:center;">
             <p style="margin-bottom: 5px;">© 2025 <b>Sidhanth L</b></p>
             <p style="margin-bottom: 5px;">Built with 
-            <span style='color:#68d6e3;'>LangChain</span>,
-            <span style='color:#3cbfbe;'>ChromaDB</span>, 
-            <span style='color:#c5ba6a;'>Streamlit</span>,
-            <span style='color:#b836bf;'>Custom LLM via Replicate</span>
-        </p>
+                <span style='color:#68d6e3;'>LangChain</span>,
+                <span style='color:#3cbfbe;'>ChromaDB</span>, 
+                <span style='color:#c5ba6a;'>Streamlit</span>,
+                <span style='color:#b836bf;'>Custom LLM via Replicate</span>
+            </p>
             <p style="margin-bottom: 5px;">Powered by RAG · Deployed on Streamlit Community Cloud</p>
             <p>
                 <a href="https://github.com/sidhanth01" style="color:#8baaff;text-decoration:none;">GitHub</a>
