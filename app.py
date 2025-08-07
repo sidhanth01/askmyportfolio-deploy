@@ -96,7 +96,12 @@ def call_together_llm(prompt: str) -> str:
     }
     try:
         response = requests.post(url, headers=headers, json=payload, timeout=60)
-        response.raise_for_status()
+        if response.status_code != 200:
+            try:
+                err_json = response.json()
+                return f"Together AI error {response.status_code}: {err_json.get('error', err_json)}"
+            except Exception:
+                return f"Together AI error {response.status_code}: {response.text}"
         result = response.json()
         return result.get("choices", [{}])[0].get("message", {}).get("content", "Sorry, no response from Together AI.")
     except Exception as e:
