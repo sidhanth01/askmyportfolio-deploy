@@ -252,7 +252,6 @@ with st.sidebar:
                     response = f"Sorry, there was an error processing this example: {e}"
 
             st.session_state.messages.append({"role": "assistant", "content": response})
-            st.experimental_rerun()
 
     st.markdown("---")
     st.markdown("""
