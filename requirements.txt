@@ -7,3 +7,4 @@ python-dotenv
 huggingface_hub>=0.22.0
 sentence-transformers
 fpdf2
+pysqlite3-binary
