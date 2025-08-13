@@ -10,3 +10,4 @@ fpdf2
 pysqlite3-binary
 replicate
 requests
+groq

@@ -5,6 +5,7 @@ import io  # For BytesIO
 import base64
 from fpdf import FPDF
 from fpdf.enums import XPos, YPos
+from groq import Groq
 
 # SQLite version fix for ChromaDB on Streamlit Cloud (important to do before LangChain/Chroma imports)
 try:
@@ -68,42 +69,29 @@ def get_vector_store():
 vectorstore = get_vector_store()
 retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
-# Together AI API key from secrets or env
-TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY") or st.secrets.get("TOGETHER_API_KEY")
-if not TOGETHER_API_KEY:
-    st.error("Together AI API key (TOGETHER_API_KEY) not found. Please add it to Streamlit secrets.")
+# Load API key
+GROQ_API_KEY = os.getenv("GROQ_API_KEY") or st.secrets.get("GROQ_API_KEY")
+if not GROQ_API_KEY:
+    st.error("Groq API key (GROQ_API_KEY) not found. Please add it to Streamlit secrets.")
     st.stop()
 
-# Together AI model slug (update if needed)
-TOGETHER_MODEL = "mistralai/Mistral-7B-Instruct-v0.2"
+# Initialize Groq client
+groq_client = Groq(api_key=GROQ_API_KEY)
 
-def call_together_llm(prompt: str) -> str:
-    url = "https://api.together.xyz/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {TOGETHER_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "model": TOGETHER_MODEL,
-        "messages": [
-            {"role": "system", "content": "You are an AI assistant."},
-            {"role": "user", "content": prompt}
-        ],
-        "max_tokens": 256,
-        "temperature": 0.0
-    }
+def call_groq_llm(prompt: str) -> str:
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=60)
-        if response.status_code != 200:
-            try:
-                err_json = response.json()
-                return f"Together AI error {response.status_code}: {err_json.get('error', err_json)}"
-            except Exception:
-                return f"Together AI error {response.status_code}: {response.text}"
-        result = response.json()
-        return result.get("choices", [{}])[0].get("message", {}).get("content", "Sorry, no response from Together AI.")
+        response = groq_client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "system", "content": "You are an AI assistant."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=768,
+            temperature=0.0
+        )
+        return response.choices[0].message.content.strip()
     except Exception as e:
-        return f"Error calling Together AI LLM: {e}"
+        return f"Error calling Groq LLM: {e}"
 
 # --- Prompt Template ---
 PROMPT = """
@@ -159,7 +147,7 @@ if st.session_state.awaiting_response and st.session_state.pending_question:
             docs = retriever.get_relevant_documents(st.session_state.pending_question)
             context_text = "\n\n".join([doc.page_content for doc in docs])
             final_prompt = PROMPT.format(context=context_text, question=st.session_state.pending_question)
-            response = call_together_llm(final_prompt)
+            response = call_groq_llm(final_prompt)
         except Exception as e:
             response = f"Sorry, there was an error processing your request: {e}"
 
@@ -305,7 +293,7 @@ with st.sidebar:
                 <span style='color:#68d6e3;'>LangChain</span>,
                 <span style='color:#3cbfbe;'>ChromaDB</span>,
                 <span style='color:#c5ba6a;'>Streamlit</span>,
-                <span style='color:#b836bf;'>Custom LLM via Together AI</span>
+                <span style='color:#b836bf;'>Custom LLM via Groq</span>
             </p>
             <p style="margin-bottom: 5px;">Powered by RAG · Deployed on Streamlit Community Cloud</p>
             <p>
