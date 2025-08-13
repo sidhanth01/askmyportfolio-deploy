@@ -1,18 +1,9 @@
----
-title: Ask-My-Portfolio
-emoji: 💬
-colorFrom: 'blue'
-colorTo: 'indigo'
-sdk: streamlit
-app_file: app.py
-pinned: false
----
 
 # Ask-My-Portfolio
 
 ### An AI-powered chatbot that intelligently answers questions about my professional portfolio and projects.
 
-This project is deployed as a live, interactive demo on Hugging Face Spaces, showcasing a seamless end-to-end RAG application.
+This project is deployed as a live, interactive demo on Streamlit Community Cloud, showcasing a seamless end-to-end RAG application.
 
 ## ✨ Key Features
 
@@ -30,55 +21,7 @@ This project is deployed as a live, interactive demo on Hugging Face Spaces, sho
 * **Core LLM Library:** [LangChain](https://www.langchain.com/)
 * **Vector Database:** [ChromaDB](https://www.trychroma.com/)
 * **Embedding Model:** `all-MiniLM-L6-v2` (from Hugging Face)
-* **Language Models:**
-    * Local Development: [Ollama](https://ollama.ai/) (Mistral 7B)
-    * Cloud Deployment: [HuggingFaceHub](https://huggingface.co/docs/hub/spaces-sdks-integrations) (Flan-T5-Base)
-* **Deployment:** [Hugging Face Spaces](https://huggingface.co/spaces)
 * **Version Control:** [Git](https://git-scm.com/) and [Git LFS](https://git-lfs.github.com/) for handling large files.
-
-## 💻 Local Setup & Installation
-
-To run this project on your local machine, follow these steps:
-
-1.  **Clone the repository:**
-    ```bash
-    git clone [https://github.com/your-username/your-repo-name.git](https://github.com/your-username/your-repo-name.git)
-    cd your-repo-name
-    ```
-2.  **Initialize Git LFS and pull the data files:**
-    ```bash
-    git lfs install
-    git pull
-    ```
-3.  **Set up the virtual environment and install dependencies:**
-    ```bash
-    python -m venv venv
-    # For Windows:
-    .\venv\Scripts\activate
-    # For macOS/Linux:
-    source venv/bin/activate
-
-    # Install dependencies
-    pip install -r requirements.txt
-    ```
-4.  **Set up environment variables:**
-    * Create a `.env` file in the root directory.
-    * Fill it with your token and LLM details:
-        ```
-        OLLAMA_BASE_URL="http://localhost:11434"
-        OLLAMA_MODEL="mistral"
-        HF_TOKEN="<your_hugging_face_token>"
-        ```
-5.  **Run the data ingestion script:**
-    * Ensure your Ollama server is running locally and the `mistral` model is pulled.
-    * This will create the `chroma_db` vector database.
-    ```bash
-    python ingest_data.py
-    ```
-6.  **Launch the Streamlit application:**
-    ```bash
-    streamlit run app.py
-    ```
 
 ## 📄 Usage
 
