@@ -20,6 +20,17 @@ from langchain_chroma import Chroma
 from langchain.prompts import ChatPromptTemplate
 
 import requests  # For Together AI API calls
+import re
+# Function to reduce heading levels in markdown
+def reduce_heading_levels(md: str, max_level=2) -> str:
+    """
+    Downgrade all markdown headings to at most '##' (h2).
+    """
+    def replacer(match):
+        level = min(len(match.group(1)), max_level)
+        return "#" * level + " "
+    return re.sub(r"^(#{1,6})\s+", replacer, md, flags=re.MULTILINE)
+
 
 # --- Streamlit Page Configuration ---
 st.set_page_config(
@@ -126,7 +137,12 @@ with chat_display_area:
     for msg in st.session_state.messages:
         avatar = "🧑‍💼" if msg["role"] == "user" else "🤖"
         with st.chat_message(msg["role"], avatar=avatar):
-            st.write(msg["content"])
+            content = msg["content"]
+            if msg["role"] == "assistant":  # Only fix headings for assistant
+                content = reduce_heading_levels(content, max_level=2)
+                st.markdown(content, unsafe_allow_html=True)
+            else:
+                st.write(content)
 
 # --- User input ---
 user_question = st.chat_input("Ask me about my projects, skills, or career journey...", key="chat_input_main_box")
