@@ -21,24 +21,37 @@ from langchain.prompts import ChatPromptTemplate
 
 import requests  # For Together AI API calls
 import re
-# Function to reduce heading levels in markdown
-def reduce_heading_levels(md: str, max_level=2) -> str:
+def subheading_to_styled_bold(md: str) -> str:
     """
-    Downgrade all markdown headings (#) and HTML headings (<h1>-<h6>)
-    to at most the given max_level.
+    Replace all markdown and HTML headings with slightly larger bold styled spans.
     """
-    # Fix markdown-style headings
+    # For markdown headings (#, ##, etc.)
     def md_replacer(match):
-        level = min(len(match.group(1)), max_level)
-        return "#" * level + " "
-    text = re.sub(r"^(#{1,6})\s+", md_replacer, md, flags=re.MULTILINE)
+        # Will capture the heading content after `# ...`
+        heading_text = match.group(2).strip()
+        # Use span with style; adjust '1.14em' to make bigger/smaller as needed
+        return f'<span style="font-size:1.14em; font-weight:700; color:#e8e7ff;">{heading_text}</span>\n'
 
-    # Fix HTML headings
+    md_output = re.sub(
+        r'^(#{1,6})\s+(.*)$',
+        md_replacer,
+        md,
+        flags=re.MULTILINE
+    )
+
+    # For HTML headings <h1>-<h6>
     def html_replacer(match):
-        return f"<h{max_level}>{match.group(2)}</h{max_level}>"
-    text = re.sub(r"<h([1-6])>(.*?)</h\1>", html_replacer, text, flags=re.IGNORECASE | re.DOTALL)
+        heading_text = match.group(2).strip()
+        return f'<span style="font-size:1.14em; font-weight:700; color:#e8e7ff;">{heading_text}</span>\n'
 
-    return text
+    final_output = re.sub(
+        r'<h[1-6]>(.*?)</h[1-6]>',
+        html_replacer,
+        md_output,
+        flags=re.IGNORECASE | re.DOTALL
+    )
+
+    return final_output
 
 
 # --- Streamlit Page Configuration ---
@@ -123,7 +136,7 @@ Never invent beyond the context provided, but you can improvise the answer based
 Keep every answer concise, precise, professional, and focused on the question asked.
 When asked to elaborate, explain the relevant point in your own words using only what is present in the context. Do not supplement with outside information.
 Never include any source document IDs or references in the final answer.
-When outputting headings, use at most '##' markdown. Do not use <h1> HTML tags.
+When formatting, do not use headings (#, ##, or <h1>)—make section titles bold, slightly larger than body, but subtle
 
 Context:
 {context}
@@ -149,7 +162,7 @@ with chat_display_area:
         with st.chat_message(msg["role"], avatar=avatar):
             content = msg["content"]
             if msg["role"] == "assistant":  # Only fix headings for assistant
-                content = reduce_heading_levels(content, max_level=2)
+                content = subheading_to_styled_bold(content)
                 st.markdown(content, unsafe_allow_html=True)
             else:
                 st.write(content)
