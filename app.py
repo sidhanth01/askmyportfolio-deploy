@@ -24,12 +24,21 @@ import re
 # Function to reduce heading levels in markdown
 def reduce_heading_levels(md: str, max_level=2) -> str:
     """
-    Downgrade all markdown headings to at most '##' (h2).
+    Downgrade all markdown headings (#) and HTML headings (<h1>-<h6>)
+    to at most the given max_level.
     """
-    def replacer(match):
+    # Fix markdown-style headings
+    def md_replacer(match):
         level = min(len(match.group(1)), max_level)
         return "#" * level + " "
-    return re.sub(r"^(#{1,6})\s+", replacer, md, flags=re.MULTILINE)
+    text = re.sub(r"^(#{1,6})\s+", md_replacer, md, flags=re.MULTILINE)
+
+    # Fix HTML headings
+    def html_replacer(match):
+        return f"<h{max_level}>{match.group(2)}</h{max_level}>"
+    text = re.sub(r"<h([1-6])>(.*?)</h\1>", html_replacer, text, flags=re.IGNORECASE | re.DOTALL)
+
+    return text
 
 
 # --- Streamlit Page Configuration ---
@@ -114,6 +123,7 @@ Never invent beyond the context provided, but you can improvise the answer based
 Keep every answer concise, precise, professional, and focused on the question asked.
 When asked to elaborate, explain the relevant point in your own words using only what is present in the context. Do not supplement with outside information.
 Never include any source document IDs or references in the final answer.
+When outputting headings, use at most '##' markdown. Do not use <h1> HTML tags.
 
 Context:
 {context}
