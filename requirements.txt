@@ -11,3 +11,4 @@ pysqlite3-binary
 replicate
 requests
 groq
+langchain-huggingface>=0.0.1
