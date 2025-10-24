@@ -1,8 +1,8 @@
 streamlit
-langchain
+langchain-core>=0.1.0
 langchain-community>=0.0.30
-langchain-chroma
-chromadb
+langchain-chroma>=0.0.5
+chromadb>=0.4.22
 python-dotenv
 huggingface_hub>=0.22.0
 sentence-transformers
