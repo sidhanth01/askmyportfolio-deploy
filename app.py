@@ -15,60 +15,46 @@ try:
 except Exception:
     pass
 
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain_core.prompts import ChatPromptTemplate
 
 import requests  # For Together AI API calls
 import re
-def subheading_to_styled_bold(md: str) -> str:
-    """
-    Replace all markdown and HTML headings with slightly larger bold styled spans.
-    """
-    # For markdown headings (#, ##, etc.)
-    def md_replacer(match):
-        # Will capture the heading content after `# ...`
-        heading_text = match.group(2).strip()
-        # Use span with style; adjust '1.14em' to make bigger/smaller as needed
-        return f'<span style="font-size:1.14em; font-weight:700; color:#e8e7ff;">{heading_text}</span>\n'
 
+def subheading_to_styled_bold(md: str) -> str:
+    def md_replacer(match):
+        heading_text = match.group(2).strip()
+        return f'<span style="font-size:1.14em; font-weight:700; color:#e8e7ff;">{heading_text}</span>\n'
     md_output = re.sub(
         r'^(#{1,6})\s+(.*)$',
         md_replacer,
         md,
         flags=re.MULTILINE
     )
-
-    # For HTML headings <h1>-<h6>
     def html_replacer(match):
         heading_text = match.group(2).strip()
         return f'<span style="font-size:1.14em; font-weight:700; color:#e8e7ff;">{heading_text}</span>\n'
-
     final_output = re.sub(
         r'<h[1-6]>(.*?)</h[1-6]>',
         html_replacer,
         md_output,
         flags=re.IGNORECASE | re.DOTALL
     )
-
     return final_output
 
-
-# --- Streamlit Page Configuration ---
 st.set_page_config(
     page_title="Portfolio Explorer",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- Custom CSS ---
 st.markdown("""
 <style>
 /* Paste your complete Gemini dark theme CSS here */
 </style>
 """, unsafe_allow_html=True)
 
-# --- Heading and Tagline ---
 st.markdown('''
 <h1 style="text-align:center; font-size:2.8em; font-weight:800; color:#FFFFFF; margin-bottom:0.1em;">
     Ask-My-Portfolio
@@ -78,18 +64,14 @@ st.markdown('''
 </div>
 ''', unsafe_allow_html=True)
 
-# --- Load Environment Variables ---
 load_dotenv()
 
 DATA_PATH = "data/"
 CHROMA_DB_PATH = "chroma_db/"
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 
-# Ensure data dir exists
 if not os.path.exists(DATA_PATH):
     os.makedirs(DATA_PATH)
-
-# Check Chroma DB exists
 if not os.path.exists(CHROMA_DB_PATH) or not os.listdir(CHROMA_DB_PATH):
     st.error("Error: The ChromaDB knowledge base was not found. Please ingest your data locally and push 'chroma_db' directory.")
     st.stop()
@@ -102,13 +84,11 @@ def get_vector_store():
 vectorstore = get_vector_store()
 retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
-# Load API key
 GROQ_API_KEY = os.getenv("GROQ_API_KEY") or st.secrets.get("GROQ_API_KEY")
 if not GROQ_API_KEY:
     st.error("Groq API key (GROQ_API_KEY) not found. Please add it to Streamlit secrets.")
     st.stop()
 
-# Initialize Groq client
 groq_client = Groq(api_key=GROQ_API_KEY)
 
 def call_groq_llm(prompt: str) -> str:
@@ -126,7 +106,6 @@ def call_groq_llm(prompt: str) -> str:
     except Exception as e:
         return f"Error calling Groq LLM: {e}"
 
-# --- Prompt Template ---
 PROMPT = """
 You are an AI assistant designed to answer questions about a user's professional portfolio and projects.
 Use ONLY the provided context to answer. If you cannot find the answer in the context, clearly state: "Sorry, I could not find that information in the current portfolio documentation."
@@ -146,7 +125,6 @@ Question: {question}
 Answer:"""
 prompt_template = ChatPromptTemplate.from_template(PROMPT)
 
-# --- Initialize session state ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "awaiting_response" not in st.session_state:
@@ -154,66 +132,54 @@ if "awaiting_response" not in st.session_state:
 if "pending_question" not in st.session_state:
     st.session_state.pending_question = ""
 
-# --- Display chat messages ---
 chat_display_area = st.container()
 with chat_display_area:
     for msg in st.session_state.messages:
         avatar = "🧑‍💼" if msg["role"] == "user" else "🤖"
         with st.chat_message(msg["role"], avatar=avatar):
             content = msg["content"]
-            if msg["role"] == "assistant":  # Only fix headings for assistant
+            if msg["role"] == "assistant":
                 content = subheading_to_styled_bold(content)
                 st.markdown(content, unsafe_allow_html=True)
             else:
                 st.write(content)
 
-# --- User input ---
 user_question = st.chat_input("Ask me about my projects, skills, or career journey...", key="chat_input_main_box")
 
-# Handle typed input
 if user_question:
-    # Add question immediately
     st.session_state.messages.append({"role": "user", "content": user_question})
-    # Set pending question and awaiting response flag
     st.session_state.pending_question = user_question
     st.session_state.awaiting_response = True
     st.rerun()
 
-# -- If waiting response, generate it now --
 if st.session_state.awaiting_response and st.session_state.pending_question:
     with st.spinner("Thinking..."):
         try:
-            docs = retriever.get_relevant_documents(st.session_state.pending_question)
+            docs = retriever.invoke(st.session_state.pending_question)  # <--- UPDATED LINE
             context_text = "\n\n".join([doc.page_content for doc in docs])
             final_prompt = PROMPT.format(context=context_text, question=st.session_state.pending_question)
             response = call_groq_llm(final_prompt)
         except Exception as e:
             response = f"Sorry, there was an error processing your request: {e}"
 
-    # Append assistant response
     st.session_state.messages.append({"role": "assistant", "content": response})
     st.session_state.pending_question = ""
     st.session_state.awaiting_response = False
     st.rerun()
 
-# --- Download chat transcripts ---
 if st.session_state.messages:
-
     def transcript_content():
         return "\n".join([f"{'USER:' if m['role']=='user' else 'AI:'} {m['content']}" for m in st.session_state.messages])
-
     def safe_text(text):
         replacements = {'—': '-', '–': '-', '’': "'", '“': '"', '”': '"', '…': '...'}
         for k,v in replacements.items():
             text = text.replace(k, v)
         return text.encode("ascii", "ignore").decode("ascii")
-
     def transcript_to_pdf():
         pdf = FPDF()
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
         pdf.set_font("Helvetica", size=11)
-
         for msg in st.session_state.messages:
             role_label = "USER:" if msg["role"] == "user" else "AI:"
             pdf.set_font("Helvetica", "B", 11)
@@ -221,7 +187,6 @@ if st.session_state.messages:
             pdf.set_font("Helvetica", "", 11)
             pdf.multi_cell(0, 8, safe_text(msg["content"]))
             pdf.ln(2)
-
         pdf_output = io.BytesIO()
         pdf_bytes = pdf.output(dest='S')
         pdf_output.write(pdf_bytes)
@@ -251,7 +216,6 @@ if st.session_state.messages:
             use_container_width=True,
         )
 
-# --- Sidebar with example questions and resume embed ---
 with st.sidebar:
     st.markdown('<div style="font-weight:600; font-size:1.21em;margin-top:-0.7em;">💬 Interview Prompts</div>', unsafe_allow_html=True)
     example_questions = [
@@ -300,17 +264,11 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     try:
-        # File path to your local resume
-        # ⚠️ Make sure this matches your file name exactly
         resume_file_path = "Sidhanth_Resume.pdf"
-        
-        # Check if the resume file exists
         if os.path.exists(resume_file_path):
             with open(resume_file_path, "rb") as f:
                 pdf_bytes = f.read()
-            
-            st.markdown("---") # Add a separator for better UI
-
+            st.markdown("---")
             st.download_button(
                 label="⬇️ View or Download Resume",
                 data=pdf_bytes,
@@ -321,7 +279,6 @@ with st.sidebar:
             )
         else:
             st.warning(f"Resume file '{resume_file_path}' not found. Please add it to the project directory.")
-            
     except Exception as e:
         st.error(f"Error loading resume: {e}")
 
